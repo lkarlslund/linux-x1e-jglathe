@@ -1,0 +1,24 @@
+# makepkg working directories
+/src/
+/pkg/
+/linux_ms_dev_kit/
+/linux_ms_dev_kit_local/
+
+# built packages and metadata
+/*.pkg.tar.*
+/*.src.tar.*
+/*.sig
+/*.BUILDINFO
+/*.MTREE
+
+# logs and local scratch files
+/*.log
+/*.tmp
+/*.temp
+
+# local editor / tool noise
+/.codex
+
+# ad-hoc local backups
+/*.bak
+/*.bak-*

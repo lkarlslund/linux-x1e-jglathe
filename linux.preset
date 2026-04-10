@@ -1,0 +1,7 @@
+# mkinitcpio preset file for the '%PKGBASE%' package
+ALL_kver="/boot/vmlinuz-%PKGBASE%"
+ALL_config="/etc/mkinitcpio.conf.d/%PKGBASE%.conf"
+
+PRESETS=('default')
+
+default_image="/boot/initramfs-%PKGBASE%.img"
