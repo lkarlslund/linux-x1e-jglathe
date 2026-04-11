@@ -1,7 +1,7 @@
 # Maintainer: local custom build
 
 pkgbase=linux-x1e-jglathe
-pkgver=6.19.6
+pkgver=6.19.10
 pkgrel=1
 pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
 url='https://github.com/jglathe/linux_ms_dev_kit'
@@ -22,8 +22,8 @@ options=(
   !debug
   !strip
 )
-_tag='jg/ubuntu-qcom-x1e-6.19.6-jg-6'
-_srcname='linux_ms_dev_kit_6_19_6_jg_6'
+_tag='jg/ubuntu-qcom-x1e-6.19.10-jg-0'
+_srcname='linux_ms_dev_kit_6_19_10_jg_0'
 source=(
   "${_srcname}::git+https://github.com/jglathe/linux_ms_dev_kit.git#tag=${_tag}"
   'running.config'
