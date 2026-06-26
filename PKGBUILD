@@ -2,7 +2,7 @@
 
 pkgbase=linux-x1e-jglathe-7.1
 pkgver=7.1.1
-pkgrel=1
+pkgrel=2
 pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
 url='https://github.com/jglathe/linux_ms_dev_kit'
 arch=(aarch64)
@@ -105,7 +105,7 @@ _package() {
   shopt -s nullglob
   local dtb
   for dtb in arch/arm64/boot/dts/qcom/x1e*.dtb; do
-    install -Dm644 "$dtb" "$pkgdir/boot/$(basename "$dtb")"
+    install -Dm644 "$dtb" "$pkgdir/boot/dtbs/${pkgbase}/$(basename "$dtb")"
   done
   shopt -u nullglob
 
