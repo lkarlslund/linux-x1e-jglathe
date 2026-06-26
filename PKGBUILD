@@ -1,7 +1,7 @@
 # Maintainer: local custom build
 
-pkgbase=linux-x1e-jglathe
-pkgver=6.19.10
+pkgbase=linux-x1e-jglathe-7.1
+pkgver=7.1.1
 pkgrel=1
 pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
 url='https://github.com/jglathe/linux_ms_dev_kit'
@@ -22,8 +22,8 @@ options=(
   !debug
   !strip
 )
-_tag='jg/ubuntu-qcom-x1e-6.19.10-jg-0'
-_srcname='linux_ms_dev_kit_6_19_10_jg_0'
+_tag='jg/ubuntu-qcom-x1e-7.1.1-jg-0'
+_srcname='linux_ms_dev_kit_7_1_1_jg_0'
 source=(
   "${_srcname}::git+https://github.com/jglathe/linux_ms_dev_kit.git#tag=${_tag}"
   'running.config'
@@ -31,7 +31,7 @@ source=(
   '60-linux.hook'
   '90-linux.hook'
   'mkinitcpio.conf'
-  'linux-x1e-jglathe.install'
+  'linux-x1e-jglathe-7.1.install'
 )
 sha256sums=(
   'SKIP'
@@ -40,7 +40,7 @@ sha256sums=(
   '452b8d4d71e1565ca91b1bebb280693549222ef51c47ba8964e411b2d461699c'
   '75f99f5239e03238f88d1a834c50043ec32b1dc568f2cc291b07d04718483919'
   'd417d09742b7a1f59f3bc2135d23a91fcf006629ba14336f812f89bc73d34e8e'
-  '1a5c8d4a83c4cef7aa8dff107cdc2e7286cd1ecc9dfbc414e7d746623de734d1'
+  '4525e95d0cc68a9035a7d54b5f0a14d3779c7fa0ac91c6094a74a906292bb25c'
 )
 
 export KBUILD_BUILD_HOST=archlinuxarm
