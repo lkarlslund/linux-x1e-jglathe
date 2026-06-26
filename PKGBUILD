@@ -2,7 +2,7 @@
 
 pkgbase=linux-x1e-jglathe-7.1
 pkgver=7.1.1
-pkgrel=2
+pkgrel=3
 pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
 url='https://github.com/jglathe/linux_ms_dev_kit'
 arch=(aarch64)
@@ -22,8 +22,8 @@ options=(
   !debug
   !strip
 )
-_tag='jg/ubuntu-qcom-x1e-7.1.1-jg-0'
-_srcname='linux_ms_dev_kit_7_1_1_jg_0'
+_tag='jg/ubuntu-qcom-x1e-7.1.1-jg-1'
+_srcname='linux_ms_dev_kit_7_1_1_jg_1'
 source=(
   "${_srcname}::git+https://github.com/jglathe/linux_ms_dev_kit.git#tag=${_tag}"
   'running.config'
