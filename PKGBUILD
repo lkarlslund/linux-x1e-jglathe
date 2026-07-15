@@ -2,7 +2,7 @@
 
 pkgbase=linux-x1e-jglathe-7.1
 pkgver=7.1.3
-pkgrel=1
+pkgrel=3
 pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
 url='https://github.com/jglathe/linux_ms_dev_kit'
 arch=(aarch64)
@@ -32,6 +32,8 @@ source=(
   '90-linux.hook'
   'mkinitcpio.conf'
   'linux-x1e-jglathe-7.1.install'
+  '0001-phy-qcom-mipi-csi2-backport-x1e-runtime-bindings.patch'
+  '0002-arm64-dts-qcom-hamoa-align-csiphy-clocks-with-v9-phy.patch'
 )
 sha256sums=(
   'SKIP'
@@ -41,6 +43,8 @@ sha256sums=(
   '75f99f5239e03238f88d1a834c50043ec32b1dc568f2cc291b07d04718483919'
   'd417d09742b7a1f59f3bc2135d23a91fcf006629ba14336f812f89bc73d34e8e'
   '4525e95d0cc68a9035a7d54b5f0a14d3779c7fa0ac91c6094a74a906292bb25c'
+  '8b7039b5e18e6a4ccab746cb882a4335b5b19d13a2663ef875c19930c83b020a'
+  '82a25a479b1164e1e76a1541a3afc97f8aed46febbc35caed196d96f10f8d043'
 )
 
 export KBUILD_BUILD_HOST=archlinuxarm
@@ -49,6 +53,10 @@ export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EP
 
 prepare() {
   cd "${_srcname}"
+
+  echo "Applying local patches..."
+  patch -Np1 < "${srcdir}/0001-phy-qcom-mipi-csi2-backport-x1e-runtime-bindings.patch"
+  patch -Np1 < "${srcdir}/0002-arm64-dts-qcom-hamoa-align-csiphy-clocks-with-v9-phy.patch"
 
   echo "Setting version..."
   echo "-${pkgrel}" > localversion.10-pkgrel

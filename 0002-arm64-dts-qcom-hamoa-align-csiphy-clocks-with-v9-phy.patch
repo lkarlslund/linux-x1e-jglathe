@@ -1,0 +1,132 @@
+diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+index c4666d6bd61f..3938ab68e66d 100644
+--- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
++++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+@@ -5845,23 +5845,21 @@ csiphy0: phy@ace4000 {
+ 
+ 				clocks = <&camcc CAM_CC_CSIPHY0_CLK>,
+ 					 <&camcc CAM_CC_CSI0PHYTIMER_CLK>,
+-					 <&camcc CAM_CC_CAMNOC_AXI_RT_CLK>,
+-					 <&camcc CAM_CC_CPAS_AHB_CLK>;
+-				clock-names = "csiphy",
+-					      "csiphy_timer",
+-					      "camnoc_axi",
+-					      "cpas_ahb";
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
++				clock-names = "core",
++					      "timer",
++					      "ahb";
+ 
+ 				operating-points-v2 = <&csiphy_mxc_opp_table>;
+ 
+ 				interrupts = <GIC_SPI 477 IRQ_TYPE_EDGE_RISING>;
+ 
+ 				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
+-						<&rpmhpd RPMHPD_MXC>,
+-						<&rpmhpd RPMHPD_MMCX>;
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
+ 				power-domain-names = "top",
+-						     "mx",
+-						     "mmcx";
++						     "mmcx",
++						     "mx";
+ 
+ 				#phy-cells = <1>;
+ 
+@@ -5874,23 +5872,21 @@ csiphy1: phy@ace6000 {
+ 
+ 				clocks = <&camcc CAM_CC_CSIPHY1_CLK>,
+ 					 <&camcc CAM_CC_CSI1PHYTIMER_CLK>,
+-					 <&camcc CAM_CC_CAMNOC_AXI_RT_CLK>,
+-					 <&camcc CAM_CC_CPAS_AHB_CLK>;
+-				clock-names = "csiphy",
+-					      "csiphy_timer",
+-					      "camnoc_axi",
+-					      "cpas_ahb";
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
++				clock-names = "core",
++					      "timer",
++					      "ahb";
+ 
+ 				operating-points-v2 = <&csiphy_mxc_opp_table>;
+ 
+ 				interrupts = <GIC_SPI 478 IRQ_TYPE_EDGE_RISING>;
+ 
+ 				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
+-						<&rpmhpd RPMHPD_MXC>,
+-						<&rpmhpd RPMHPD_MMCX>;
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
+ 				power-domain-names = "top",
+-						     "mx",
+-						     "mmcx";
++						     "mmcx",
++						     "mx";
+ 
+ 				#phy-cells = <1>;
+ 
+@@ -5903,23 +5899,21 @@ csiphy2: phy@ace8000 {
+ 
+ 				clocks = <&camcc CAM_CC_CSIPHY2_CLK>,
+ 					 <&camcc CAM_CC_CSI2PHYTIMER_CLK>,
+-					 <&camcc CAM_CC_CAMNOC_AXI_RT_CLK>,
+-					 <&camcc CAM_CC_CPAS_AHB_CLK>;
+-				clock-names = "csiphy",
+-					      "csiphy_timer",
+-					      "camnoc_axi",
+-					      "cpas_ahb";
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
++				clock-names = "core",
++					      "timer",
++					      "ahb";
+ 
+ 				operating-points-v2 = <&csiphy_mxc_opp_table>;
+ 
+ 				interrupts = <GIC_SPI 479 IRQ_TYPE_EDGE_RISING>;
+ 
+ 				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
+-						<&rpmhpd RPMHPD_MXC>,
+-						<&rpmhpd RPMHPD_MMCX>;
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
+ 				power-domain-names = "top",
+-						     "mx",
+-						     "mmcx";
++						     "mmcx",
++						     "mx";
+ 
+ 				#phy-cells = <1>;
+ 
+@@ -5932,23 +5926,21 @@ csiphy4: phy@acec000 {
+ 
+ 				clocks = <&camcc CAM_CC_CSIPHY4_CLK>,
+ 					 <&camcc CAM_CC_CSI4PHYTIMER_CLK>,
+-					 <&camcc CAM_CC_CAMNOC_AXI_RT_CLK>,
+-					 <&camcc CAM_CC_CPAS_AHB_CLK>;
+-				clock-names = "csiphy",
+-					      "csiphy_timer",
+-					      "camnoc_axi",
+-					      "cpas_ahb";
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
++				clock-names = "core",
++					      "timer",
++					      "ahb";
+ 
+ 				operating-points-v2 = <&csiphy_mxa_opp_table>;
+ 
+ 				interrupts = <GIC_SPI 122 IRQ_TYPE_EDGE_RISING>;
+ 
+ 				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
+-						<&rpmhpd RPMHPD_MX>,
+-						<&rpmhpd RPMHPD_MMCX>;
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
+ 				power-domain-names = "top",
+-						     "mx",
+-						     "mmcx";
++						     "mmcx",
++						     "mx";
+ 
+ 				#phy-cells = <1>;
+ 
