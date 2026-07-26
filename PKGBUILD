@@ -2,7 +2,7 @@
 
 pkgbase=linux-x1e-jglathe-7.1
 pkgver=7.1.3
-pkgrel=5
+pkgrel=6
 pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
 url='https://github.com/jglathe/linux_ms_dev_kit'
 arch=(aarch64)
@@ -35,7 +35,7 @@ source=(
 )
 sha256sums=(
   'SKIP'
-  '04e4df2a240b0d66e92cf2645d31c1e8493ac06f0b2af7768b001f492034c30f'
+  '5ad387ef7a9b7f300310b52703fed9b6d8c96712e848e24c27f077f916a98747'
   '01d1b6e61aee68ff3f27909cbed6b5458dade4e8807e229e04265f79777cc4ca'
   '452b8d4d71e1565ca91b1bebb280693549222ef51c47ba8964e411b2d461699c'
   '75f99f5239e03238f88d1a834c50043ec32b1dc568f2cc291b07d04718483919'
