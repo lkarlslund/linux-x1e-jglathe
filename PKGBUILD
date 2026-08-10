@@ -1,8 +1,8 @@
 # Maintainer: local custom build
 
 pkgbase=linux-x1e-jglathe-7.1
-pkgver=7.1.3
-pkgrel=7
+pkgver=7.1.7
+pkgrel=1
 pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
 url='https://github.com/jglathe/linux_ms_dev_kit'
 arch=(aarch64)
@@ -22,11 +22,10 @@ options=(
   !debug
   !strip
 )
-_commit='bd336e2e0937cb5b2dd258e784b3b6267c653167'
-_srcname='linux_ms_dev_kit_7_1_3_jg_2'
+_commit='3e706faa49c22f2b1af1438d769557f2e0d907bd'
+_srcname='linux_ms_dev_kit_7_1_7_jg_0'
 source=(
   "${_srcname}::git+https://github.com/jglathe/linux_ms_dev_kit.git#commit=${_commit}"
-  '0003-drm-msm-dp-use-direct-sdp-flush-for-psr.patch'
   'running.config'
   'linux.preset'
   '60-linux.hook'
@@ -36,7 +35,6 @@ source=(
 )
 sha256sums=(
   'SKIP'
-  '02dc5e1f2f005f54be3bfcf032eb7be5daccbd1bcebcd83f35dde84d19fd6f7d'
   '5ad387ef7a9b7f300310b52703fed9b6d8c96712e848e24c27f077f916a98747'
   '01d1b6e61aee68ff3f27909cbed6b5458dade4e8807e229e04265f79777cc4ca'
   '452b8d4d71e1565ca91b1bebb280693549222ef51c47ba8964e411b2d461699c'
@@ -52,8 +50,6 @@ export LOCALVERSION=
 
 prepare() {
   cd "${_srcname}"
-
-  patch -Np1 -i "${srcdir}/0003-drm-msm-dp-use-direct-sdp-flush-for-psr.patch"
 
   echo "Setting version..."
   echo "-${pkgrel}" > localversion.10-pkgrel
