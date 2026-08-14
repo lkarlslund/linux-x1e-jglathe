@@ -70,6 +70,11 @@ suitable for direct download and local `pacman -U` installation. Do not enable
 it as a pacman sync repository with signature checking disabled; package
 signing should be configured before doing that.
 
+Builds use a bounded 1.5 GB `ccache` per variant and retain makepkg's Git source
+mirror in the repository's separate Actions cache allowance. The temporary
+workflow artifacts used to join the matrix jobs are deleted after a successful
+release, leaving the downloadable packages as release assets.
+
 Release page:
 
 <https://github.com/lkarlslund/linux-x1e-jglathe/releases/tag/packages>
