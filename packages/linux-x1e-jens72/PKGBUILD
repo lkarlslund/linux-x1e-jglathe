@@ -1,0 +1,12 @@
+pkgbase=linux-x1e-jens72
+pkgver=7.2.rc6
+pkgrel=1
+
+_variant_desc='Jens 7.2 release candidate'
+_kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
+_commit='60f1e24b9fc9c7f7fdce4291b6850c5770bac51b'
+_boot_title='Arch Linux — Jens 7.2-rc6'
+_sort_key='20-x1e-jens72'
+_kernel_options='root=UUID=13fe401a-6330-424e-a3cb-2fb0a3608e7b rw debug clk_ignore_unused pd_ignore_unused id_aa64mmfr0.ecv=1 quiet splash resume=UUID=13fe401a-6330-424e-a3cb-2fb0a3608e7b resume_offset=63567145'
+
+source "${startdir}/../../common/kernel-package.inc"

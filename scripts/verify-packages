@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+variants=(
+  linux-x1e-jens71
+  linux-x1e-jens72
+  linux-x1e-jens72-pdc
+  linux-x1e-t14s-edge
+)
+declare -A seen_boot_paths=()
+declare -A seen_dtb_paths=()
+
+for variant in "${variants[@]}"; do
+  package_dir="${repo_root}/packages/${variant}"
+  bash -n "${package_dir}/PKGBUILD"
+  bash -n "${package_dir}/${variant}.install"
+
+  srcinfo=$(cd "${package_dir}" && makepkg --printsrcinfo)
+  pkgbase=$(awk '$1 == "pkgbase" { print $3; exit }' <<<"${srcinfo}")
+  commit=$(sed -n "s/^_commit='\([0-9a-f]\{40\}\)'$/\1/p" "${package_dir}/PKGBUILD")
+
+  [[ ${pkgbase} == "${variant}" ]] || {
+    echo "${variant}: pkgbase mismatch (${pkgbase})" >&2
+    exit 1
+  }
+  [[ ${commit} =~ ^[0-9a-f]{40}$ ]] || {
+    echo "${variant}: source commit is not pinned" >&2
+    exit 1
+  }
+
+  for asset in running.config linux.preset mkinitcpio.conf 60-linux.hook 90-linux.hook loader-entry.conf; do
+    [[ -e ${package_dir}/${asset} ]] || {
+      echo "${variant}: missing ${asset}" >&2
+      exit 1
+    }
+  done
+
+  boot_path="/boot/vmlinux-${pkgbase}"
+  dtb_path="/boot/dtbs/${pkgbase}"
+  [[ ! ${seen_boot_paths[${boot_path}]+set} ]] || {
+    echo "Duplicate boot path: ${boot_path}" >&2
+    exit 1
+  }
+  [[ ! ${seen_dtb_paths[${dtb_path}]+set} ]] || {
+    echo "Duplicate DTB path: ${dtb_path}" >&2
+    exit 1
+  }
+  seen_boot_paths[${boot_path}]=1
+  seen_dtb_paths[${dtb_path}]=1
+
+  printf '%-24s %s  %s\n' "${pkgbase}" "${commit:0:12}" "${dtb_path}"
+done
+
+echo "All kernel package namespaces are unique."

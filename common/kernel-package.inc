@@ -1,10 +1,8 @@
-# Maintainer: local custom build
+# Shared kernel packaging implementation. Variant PKGBUILDs define the source,
+# package identity, and boot-menu metadata before sourcing this file.
 
-pkgbase=linux-x1e-jglathe-7.1
-pkgver=7.1.7
-pkgrel=1
-pkgdesc='Linux kernel for Snapdragon X Elite laptops (jglathe branch)'
-url='https://github.com/jglathe/linux_ms_dev_kit'
+pkgdesc="Linux kernel for the Snapdragon X Elite ThinkPad T14s (${_variant_desc})"
+url="${_kernel_repo}"
 arch=(aarch64)
 license=(GPL-2.0-only)
 makedepends=(
@@ -22,25 +20,27 @@ options=(
   !debug
   !strip
 )
-_commit='3e706faa49c22f2b1af1438d769557f2e0d907bd'
-_srcname='linux_ms_dev_kit_7_1_7_jg_0'
+
+_srcname="${pkgbase}-${pkgver}"
 source=(
-  "${_srcname}::git+https://github.com/jglathe/linux_ms_dev_kit.git#commit=${_commit}"
+  "${_srcname}::git+${_kernel_repo}.git#commit=${_commit}"
   'running.config'
   'linux.preset'
   '60-linux.hook'
   '90-linux.hook'
   'mkinitcpio.conf'
-  'linux-x1e-jglathe-7.1.install'
+  'loader-entry.conf'
+  "${pkgbase}.install"
 )
 sha256sums=(
   'SKIP'
-  '5ad387ef7a9b7f300310b52703fed9b6d8c96712e848e24c27f077f916a98747'
+  'f2e8613c4b593ecb6b9645d5a170dbb43af9075a21b16786ceef1ba788db4fb2'
   '01d1b6e61aee68ff3f27909cbed6b5458dade4e8807e229e04265f79777cc4ca'
   '452b8d4d71e1565ca91b1bebb280693549222ef51c47ba8964e411b2d461699c'
   '75f99f5239e03238f88d1a834c50043ec32b1dc568f2cc291b07d04718483919'
   'fb0959eb8859d36556fb9a1f29a2af2cf964961613c200a130322692940316aa'
-  '4525e95d0cc68a9035a7d54b5f0a14d3779c7fa0ac91c6094a74a906292bb25c'
+  'SKIP'
+  'SKIP'
 )
 
 export KBUILD_BUILD_HOST=archlinuxarm
@@ -51,26 +51,27 @@ export LOCALVERSION=
 prepare() {
   cd "${_srcname}"
 
-  echo "Setting version..."
   echo "-${pkgrel}" > localversion.10-pkgrel
   echo "${pkgbase#linux}" > localversion.20-pkgname
 
-  echo "Merging running config with qcom_laptops.config..."
   awk '
     /^# CONFIG_[A-Za-z0-9_]+ is not set$/ { print; next }
     /^CONFIG_[A-Za-z0-9_]+=.*$/ { print; next }
   ' "${srcdir}/running.config" > .config
-  awk '
-    /^#/ { print; next }
-    /^$/ { print; next }
-    /^# CONFIG_[A-Za-z0-9_]+ is not set$/ { print; next }
-    /^CONFIG_[A-Za-z0-9_]+=.*$/ { print; next }
-  ' arch/arm64/configs/qcom_laptops.config > .qcom_laptops.config
-  scripts/kconfig/merge_config.sh -m .config .qcom_laptops.config
-  make olddefconfig
 
+  if [[ -f arch/arm64/configs/qcom_laptops.config ]]; then
+    awk '
+      /^#/ { print; next }
+      /^$/ { print; next }
+      /^# CONFIG_[A-Za-z0-9_]+ is not set$/ { print; next }
+      /^CONFIG_[A-Za-z0-9_]+=.*$/ { print; next }
+    ' arch/arm64/configs/qcom_laptops.config > .qcom_laptops.config
+    scripts/kconfig/merge_config.sh -m .config .qcom_laptops.config
+  fi
+
+  make olddefconfig
   make -s kernelrelease > version
-  echo "Prepared $pkgbase version $(<version)"
+  echo "Prepared ${pkgbase} $(<version) from ${_commit}"
 }
 
 build() {
@@ -79,7 +80,7 @@ build() {
 }
 
 _package() {
-  pkgdesc="The $pkgdesc kernel and modules"
+  pkgdesc="The ${pkgdesc} kernel and modules"
   depends=(
     coreutils
     initramfs
@@ -88,74 +89,70 @@ _package() {
   optdepends=(
     'wireless-regdb: to set the correct wireless channels of your country'
   )
-  provides=(
-    WIREGUARD-MODULE
-  )
+  provides=(WIREGUARD-MODULE)
   backup=("etc/mkinitcpio.d/${pkgbase}.preset")
-  install=${pkgbase}.install
+  install="${pkgbase}.install"
 
   cd "${_srcname}"
   local kernver="$(<version)"
   local modulesdir="$pkgdir/usr/lib/modules/${kernver}"
 
-  echo "Installing boot image..."
   install -Dm644 arch/arm64/boot/Image.gz "$pkgdir/boot/vmlinuz-${pkgbase}"
   install -Dm644 arch/arm64/boot/Image "$pkgdir/boot/vmlinux-${pkgbase}"
 
-  echo "Installing DTBs..."
-  shopt -s nullglob
   local dtb
-  for dtb in arch/arm64/boot/dts/qcom/x1e*.dtb; do
+  local -a t14s_dtbs=(arch/arm64/boot/dts/qcom/x1e78100-lenovo-thinkpad-t14s*.dtb)
+  if [[ ! -e ${t14s_dtbs[0]} ]]; then
+    error 'No ThinkPad T14s DTBs were built'
+    return 1
+  fi
+  for dtb in "${t14s_dtbs[@]}"; do
     install -Dm644 "$dtb" "$pkgdir/boot/dtbs/${pkgbase}/$(basename "$dtb")"
   done
-  shopt -u nullglob
 
-  # Used by mkinitcpio to name the kernel
+  local boot_subst="
+    s|%PKGBASE%|${pkgbase}|g
+    s|%BOOT_TITLE%|${_boot_title}|g
+    s|%SORT_KEY%|${_sort_key}|g
+    s|%KERNEL_OPTIONS%|${_kernel_options}|g
+  "
+  sed "${boot_subst}" "${srcdir}/loader-entry.conf" |
+    install -Dm644 /dev/stdin "$pkgdir/boot/loader/entries/${pkgbase}.conf"
+
   echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
-
-  echo "Installing modules..."
   ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
     DEPMOD=/doesnt/exist modules_install
-
-  # remove build/source links
   rm -f "$modulesdir"/build "$modulesdir"/source
 
-  local _subst="
+  local package_subst="
     s|%PKGBASE%|${pkgbase}|g
     s|%KERNVER%|${kernver}|g
   "
-
-  sed "${_subst}" "${srcdir}/linux.preset" |
+  sed "${package_subst}" "${srcdir}/linux.preset" |
     install -Dm644 /dev/stdin "$pkgdir/etc/mkinitcpio.d/${pkgbase}.preset"
-
-  sed "${_subst}" "${srcdir}/mkinitcpio.conf" |
+  sed "${package_subst}" "${srcdir}/mkinitcpio.conf" |
     install -Dm644 /dev/stdin "$pkgdir/etc/mkinitcpio.conf.d/${pkgbase}.conf"
-
-  sed "${_subst}" "${srcdir}/60-linux.hook" |
+  sed "${package_subst}" "${srcdir}/60-linux.hook" |
     install -Dm644 /dev/stdin "$pkgdir/usr/share/libalpm/hooks/60-${pkgbase}.hook"
-
-  sed "${_subst}" "${srcdir}/90-linux.hook" |
+  sed "${package_subst}" "${srcdir}/90-linux.hook" |
     install -Dm644 /dev/stdin "$pkgdir/usr/share/libalpm/hooks/90-${pkgbase}.hook"
 
-  # trigger systemd kernel-install hooks where present
   touch "$modulesdir/vmlinuz"
 }
 
 _package-headers() {
-  pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
+  pkgdesc="Headers and scripts for building modules for the ${pkgdesc}"
   depends=(pahole)
 
   cd "${_srcname}"
   local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
 
-  echo "Installing build files..."
   install -Dt "$builddir" -m644 .config Makefile Module.symvers System.map \
     localversion.* version vmlinux
   install -Dt "$builddir/kernel" -m644 kernel/Makefile
   install -Dt "$builddir/arch/arm64" -m644 arch/arm64/Makefile
   cp -t "$builddir" -a scripts
 
-  echo "Installing headers..."
   cp -t "$builddir" -a include
   cp -t "$builddir/arch/arm64" -a arch/arm64/include
   install -Dt "$builddir/arch/arm64/kernel" -m644 arch/arm64/kernel/asm-offsets.s
@@ -170,26 +167,17 @@ _package-headers() {
   install -Dt "$builddir/drivers/media/tuners" -m644 drivers/media/tuners/*.h
   install -Dt "$builddir/drivers/iio/common/hid-sensors" -m644 drivers/iio/common/hid-sensors/*.h
 
-  echo "Installing KConfig files..."
   find . -name 'Kconfig*' -exec install -Dm644 {} "$builddir/{}" \;
 
-  echo "Removing unneeded architectures..."
   local archdir
   for archdir in "$builddir"/arch/*/; do
     [[ $archdir = */arm64/ || $archdir = */arm/ ]] && continue
     rm -r "$archdir"
   done
-
-  echo "Removing documentation..."
   rm -r "$builddir/Documentation"
-
-  echo "Removing broken symlinks..."
   find -L "$builddir" -type l -delete
-
-  echo "Removing loose objects..."
   find "$builddir" -type f -name '*.o' -delete
 
-  echo "Stripping build tools..."
   local file
   while read -rd '' file; do
     case "$(file -Sib "$file")" in
@@ -204,7 +192,6 @@ _package-headers() {
     esac
   done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
 
-  echo "Adding symlink..."
   mkdir -p "$pkgdir/usr/src"
   ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
 }

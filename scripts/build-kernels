@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+all_variants=(
+  linux-x1e-jens71
+  linux-x1e-jens72
+  linux-x1e-jens72-pdc
+  linux-x1e-t14s-edge
+)
+
+usage() {
+  echo "Usage: $0 all|VARIANT [VARIANT ...]" >&2
+  echo "Variants: ${all_variants[*]}" >&2
+}
+
+if (( $# == 0 )); then
+  usage
+  exit 2
+fi
+
+if [[ $1 == all ]]; then
+  variants=("${all_variants[@]}")
+  shift
+  (( $# == 0 )) || { usage; exit 2; }
+else
+  variants=("$@")
+fi
+
+for variant in "${variants[@]}"; do
+  package_dir="${repo_root}/packages/${variant}"
+  if [[ ! -f ${package_dir}/PKGBUILD ]]; then
+    echo "Unknown kernel variant: ${variant}" >&2
+    usage
+    exit 2
+  fi
+
+  echo "==> Building ${variant}"
+  (
+    cd "${package_dir}"
+    makepkg --syncdeps --cleanbuild --clean
+  )
+done

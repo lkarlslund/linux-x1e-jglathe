@@ -3,6 +3,11 @@
 /pkg/
 /linux_ms_dev_kit/
 /linux_ms_dev_kit_local/
+packages/*/src/
+packages/*/pkg/
+packages/*/*.pkg.tar.*
+packages/*/*.src.tar.*
+packages/*/*.sig
 
 # built packages and metadata
 /*.pkg.tar.*
