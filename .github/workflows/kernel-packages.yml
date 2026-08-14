@@ -6,7 +6,7 @@ on:
       variant:
         description: Kernel variant to build and publish
         required: true
-        default: all
+        default: linux-x1e-jens72-pdc
         type: choice
         options:
           - all

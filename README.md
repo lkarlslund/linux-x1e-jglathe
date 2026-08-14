@@ -56,7 +56,8 @@ sources are shared through `/home/lak/.cache/makepkg/src`.
 GitHub Actions builds packages natively on ARM64 and publishes them to the
 rolling `packages` release. Commits do not start builds. Run the workflow
 manually and select one variant or all variants. The `build_headers` input is
-off by default; enable it only when matching headers packages are needed.
+off by default; enable it only when matching headers packages are needed. The
+PDC diagnostic kernel is the default variant during current suspend testing.
 
 Every affected PKGBUILD must receive a new `pkgver` or `pkgrel`. Publishing
 refuses to replace an existing package filename, which prevents a changed
