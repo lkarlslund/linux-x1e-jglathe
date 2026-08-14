@@ -1,7 +1,41 @@
+_configure_loader_root() {
+  local entry=boot/loader/entries/linux-x1e-jens72.conf
+  local root_uuid tmp
+
+  [[ -f $entry ]] || return 0
+  root_uuid=$(findmnt -no UUID /)
+  if [[ -z $root_uuid ]]; then
+    echo "WARNING: Could not determine the root filesystem UUID; $entry needs a root= option."
+    return 0
+  fi
+
+  tmp="${entry}.new"
+  awk -v root="root=UUID=${root_uuid}" '
+    $1 == "options" {
+      printf "options %s", root
+      for (i = 2; i <= NF; i++) {
+        if ($i !~ /^root=/)
+          printf " %s", $i
+      }
+      printf "\n"
+      next
+    }
+    { print }
+  ' "$entry" >"$tmp"
+  chmod --reference="$entry" "$tmp"
+  chown --reference="$entry" "$tmp"
+  mv "$tmp" "$entry"
+}
+
+post_install() {
+  post_upgrade
+}
+
 post_upgrade() {
   if findmnt --fstab -uno SOURCE /boot &>/dev/null && ! mountpoint -q /boot; then
     echo "WARNING: /boot appears to be a separate partition but is not mounted."
   fi
+  _configure_loader_root
 }
 
 post_remove() {
