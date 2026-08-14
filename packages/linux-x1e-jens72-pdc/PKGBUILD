@@ -7,6 +7,6 @@ _kernel_repo='https://github.com/lkarlslund/linux-x1e-t14s'
 _commit='017dc018715327d9c28d25382d2397920999929d'
 _boot_title='Arch Linux — Jens 7.2-rc6 + PDC/SS3 v4'
 _sort_key='30-x1e-jens72-pdc'
-_kernel_options='root=UUID=13fe401a-6330-424e-a3cb-2fb0a3608e7b rw id_aa64mmfr0.ecv=1 quiet splash'
+_kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash'
 
 source "${startdir}/../../common/kernel-package.inc"
