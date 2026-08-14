@@ -1,13 +1,6 @@
 name: Build kernel packages
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - common/**
-      - packages/**
-      - scripts/select-kernel-packages
-      - .github/workflows/kernel-packages.yml
   workflow_dispatch:
     inputs:
       variant:
@@ -21,6 +14,11 @@ on:
           - linux-x1e-jens72
           - linux-x1e-jens72-pdc
           - linux-x1e-t14s-edge
+      build_headers:
+        description: Build and publish matching kernel headers packages
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -31,7 +29,7 @@ concurrency:
 
 jobs:
   select:
-    name: Select changed packages
+    name: Select requested packages
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.packages.outputs.matrix }}
@@ -47,24 +45,14 @@ jobs:
         id: packages
         shell: bash
         env:
-          BEFORE_SHA: ${{ github.event.before }}
           REQUESTED_VARIANT: ${{ inputs.variant }}
         run: |
           set -euo pipefail
 
-          if [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch ]]; then
-            if [[ "${REQUESTED_VARIANT}" == all ]]; then
-              mapfile -t variants < <(./scripts/select-kernel-packages --all)
-            else
-              variants=("${REQUESTED_VARIANT}")
-            fi
-          elif [[ -n "${BEFORE_SHA}" ]] && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
-            mapfile -t variants < <(
-              git diff --name-only "${BEFORE_SHA}" "${GITHUB_SHA}" |
-                ./scripts/select-kernel-packages
-            )
-          else
+          if [[ "${REQUESTED_VARIANT}" == all ]]; then
             mapfile -t variants < <(./scripts/select-kernel-packages --all)
+          else
+            variants=("${REQUESTED_VARIANT}")
           fi
 
           if (( ${#variants[@]} == 0 )); then
@@ -116,10 +104,11 @@ jobs:
           useradd --create-home builduser
           chown -R builduser:builduser "${GITHUB_WORKSPACE}"
 
-      - name: Build kernel and headers
+      - name: Build kernel packages
         shell: bash
         env:
           VARIANT: ${{ matrix.variant }}
+          BUILD_HEADERS: ${{ inputs.build_headers }}
         run: |
           set -euo pipefail
           output_dir="${GITHUB_WORKSPACE}/output/${VARIANT}"
@@ -131,7 +120,10 @@ jobs:
 
           cd "${GITHUB_WORKSPACE}/packages/${VARIANT}"
           mapfile -t expected_packages < <(
-            sudo -u builduser env PKGDEST="${output_dir}" makepkg --packagelist
+            sudo -u builduser env \
+              BUILD_HEADERS="${BUILD_HEADERS}" \
+              PKGDEST="${output_dir}" \
+              makepkg --packagelist
           )
           for package_path in "${expected_packages[@]}"; do
             package_name=$(basename "${package_path}")
@@ -144,6 +136,7 @@ jobs:
 
           sudo -u builduser env \
             BUILDDIR="${build_dir}" \
+            BUILD_HEADERS="${BUILD_HEADERS}" \
             CCACHE_COMPRESS=true \
             CCACHE_DIR="${ccache_dir}" \
             CCACHE_MAXSIZE=1500M \
@@ -157,8 +150,9 @@ jobs:
 
           mapfile -t packages < <(find "${output_dir}" -maxdepth 1 -type f \
             -name '*.pkg.tar.*' ! -name '*.sig' -print | sort)
-          if (( ${#packages[@]} != 2 )); then
-            printf 'Expected kernel and headers packages, found %d:\n' "${#packages[@]}" >&2
+          if (( ${#packages[@]} != ${#expected_packages[@]} )); then
+            printf 'Expected %d packages, found %d:\n' \
+              "${#expected_packages[@]}" "${#packages[@]}" >&2
             printf '  %s\n' "${packages[@]}" >&2
             exit 1
           fi
@@ -230,10 +224,6 @@ jobs:
             linux-x1e-jens72-pdc linux-x1e-t14s-edge; do
             compgen -G "dist/${variant}-[0-9]*-aarch64.pkg.tar.*" >/dev/null || {
               echo "Missing kernel package for ${variant}" >&2
-              exit 1
-            }
-            compgen -G "dist/${variant}-headers-[0-9]*-aarch64.pkg.tar.*" >/dev/null || {
-              echo "Missing headers package for ${variant}" >&2
               exit 1
             }
           done

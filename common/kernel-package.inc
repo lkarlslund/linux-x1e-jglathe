@@ -196,10 +196,10 @@ _package-headers() {
   ln -sr "$builddir" "$pkgdir/usr/src/$pkgbase"
 }
 
-pkgname=(
-  "$pkgbase"
-  "$pkgbase-headers"
-)
+pkgname=("$pkgbase")
+if [[ ${BUILD_HEADERS:-true} == true ]]; then
+  pkgname+=("$pkgbase-headers")
+fi
 for _p in "${pkgname[@]}"; do
   eval "package_$_p() { _package${_p#$pkgbase}; }"
 done

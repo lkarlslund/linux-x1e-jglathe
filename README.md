@@ -53,19 +53,19 @@ sources are shared through `/home/lak/.cache/makepkg/src`.
 
 ## GitHub builds and releases
 
-GitHub Actions builds kernel and headers packages natively on ARM64 and
-publishes them to the rolling `packages` release. A change confined to one
-`packages/<variant>/` directory builds only that variant. Changes under
-`common/`, to the package-selection script, or to the workflow build all four.
-The workflow can also be run manually for one variant or for all variants.
+GitHub Actions builds packages natively on ARM64 and publishes them to the
+rolling `packages` release. Commits do not start builds. Run the workflow
+manually and select one variant or all variants. The `build_headers` input is
+off by default; enable it only when matching headers packages are needed.
 
 Every affected PKGBUILD must receive a new `pkgver` or `pkgrel`. Publishing
 refuses to replace an existing package filename, which prevents a changed
 binary from being presented as an old package version.
 
-The rolling release retains the three unchanged kernel pairs, replaces the
-changed kernel and headers pair, and regenerates `linux-x1e-t14s.db` and
-`linux-x1e-t14s.files`. Packages are currently unsigned, so the release is
+The rolling release retains unchanged packages, replaces the selected kernel
+packages, and regenerates `linux-x1e-t14s.db` and `linux-x1e-t14s.files`. A
+headers-disabled build also removes older headers for the selected variants.
+Packages are currently unsigned, so the release is
 suitable for direct download and local `pacman -U` installation. Do not enable
 it as a pacman sync repository with signature checking disabled; package
 signing should be configured before doing that.
@@ -105,10 +105,10 @@ For a package named `$pkgbase`, installation creates:
 The systemd-boot entry always references the DTB in that package's directory.
 No package installs a DTB into a shared `/boot/dtbs/qcom` location.
 
-The entries use the OLED EL2 device tree because that is the configuration of
-this machine. Root UUID, resume UUID, and resume offset are intentionally
-recorded in each variant PKGBUILD. Update all four definitions if the root
-filesystem or swapfile changes.
+The entries use the OLED EL2 device tree because that is the target hardware.
+PKGBUILDs contain no machine-specific storage identifiers. During installation,
+each package discovers the target system's root filesystem UUID and adds it to
+its own loader entry. Hibernation arguments are intentionally omitted.
 
 Installing these packages does not change the systemd-boot default. Keep the
 known-good 7.1 entry selected as the default until another variant has passed
