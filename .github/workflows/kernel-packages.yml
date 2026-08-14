@@ -100,7 +100,7 @@ jobs:
           set -euo pipefail
           pacman-key --init
           pacman-key --populate archlinuxarm
-          pacman -Syu --noconfirm --needed \
+          pacman --disable-sandbox -Syu --noconfirm --needed \
             base-devel bc cpio curl dtc git kmod libelf mkinitcpio pahole perl python sudo
 
           useradd --create-home builduser
@@ -178,7 +178,7 @@ jobs:
 
       - name: Install release tools
         shell: bash
-        run: pacman -Syu --noconfirm --needed github-cli jq pacman
+        run: pacman --disable-sandbox -Syu --noconfirm --needed github-cli jq pacman
 
       - name: Assemble repository
         shell: bash
