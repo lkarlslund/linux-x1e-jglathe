@@ -95,7 +95,7 @@ jobs:
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Restore compiler and source caches
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             .ccache/${{ matrix.variant }}
@@ -189,7 +189,7 @@ jobs:
       image: menci/archlinuxarm:base-devel@sha256:14422e0b4a478b66baf03d930917b9a83db6277c93867d94d4265e06a2e7ddf6
     steps:
       - name: Download newly built packages
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6
         with:
           pattern: kernel-*-${{ github.sha }}
           path: incoming
