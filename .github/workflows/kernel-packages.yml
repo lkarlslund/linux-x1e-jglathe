@@ -1,0 +1,278 @@
+name: Build kernel packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - common/**
+      - packages/**
+      - scripts/select-kernel-packages
+      - .github/workflows/kernel-packages.yml
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: Kernel variant to build and publish
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - linux-x1e-jens71
+          - linux-x1e-jens72
+          - linux-x1e-jens72-pdc
+          - linux-x1e-t14s-edge
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kernel-package-release
+  cancel-in-progress: false
+
+jobs:
+  select:
+    name: Select changed packages
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.packages.outputs.matrix }}
+      variants: ${{ steps.packages.outputs.variants }}
+      count: ${{ steps.packages.outputs.count }}
+    steps:
+      - name: Check out packaging repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Select packages
+        id: packages
+        shell: bash
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          REQUESTED_VARIANT: ${{ inputs.variant }}
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch ]]; then
+            if [[ "${REQUESTED_VARIANT}" == all ]]; then
+              mapfile -t variants < <(./scripts/select-kernel-packages --all)
+            else
+              variants=("${REQUESTED_VARIANT}")
+            fi
+          elif [[ -n "${BEFORE_SHA}" ]] && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+            mapfile -t variants < <(
+              git diff --name-only "${BEFORE_SHA}" "${GITHUB_SHA}" |
+                ./scripts/select-kernel-packages
+            )
+          else
+            mapfile -t variants < <(./scripts/select-kernel-packages --all)
+          fi
+
+          if (( ${#variants[@]} == 0 )); then
+            echo "The workflow was triggered but no kernel package was selected." >&2
+            exit 1
+          fi
+
+          variants_json=$(printf '%s\n' "${variants[@]}" | jq -R . | jq -sc .)
+          matrix_json=$(jq -cn --argjson variants "${variants_json}" \
+            '{include: [$variants[] | {variant: .}]}')
+
+          echo "Selected: ${variants[*]}"
+          echo "matrix=${matrix_json}" >> "${GITHUB_OUTPUT}"
+          echo "variants=${variants_json}" >> "${GITHUB_OUTPUT}"
+          echo "count=${#variants[@]}" >> "${GITHUB_OUTPUT}"
+
+  build:
+    name: Build ${{ matrix.variant }}
+    needs: select
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: menci/archlinuxarm:base-devel@sha256:14422e0b4a478b66baf03d930917b9a83db6277c93867d94d4265e06a2e7ddf6
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.select.outputs.matrix) }}
+    steps:
+      - name: Check out packaging repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          pacman-key --init
+          pacman-key --populate archlinuxarm
+          pacman -Syu --noconfirm --needed \
+            base-devel bc cpio curl dtc git kmod libelf mkinitcpio pahole perl python sudo
+
+          useradd --create-home builduser
+          chown -R builduser:builduser "${GITHUB_WORKSPACE}"
+
+      - name: Build kernel and headers
+        shell: bash
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          output_dir="${GITHUB_WORKSPACE}/output/${VARIANT}"
+          source_dir="${GITHUB_WORKSPACE}/.sources/${VARIANT}"
+          build_dir="${GITHUB_WORKSPACE}/.build/${VARIANT}"
+          install -d -o builduser -g builduser "${output_dir}" "${source_dir}" "${build_dir}"
+
+          cd "${GITHUB_WORKSPACE}/packages/${VARIANT}"
+          mapfile -t expected_packages < <(
+            sudo -u builduser env PKGDEST="${output_dir}" makepkg --packagelist
+          )
+          for package_path in "${expected_packages[@]}"; do
+            package_name=$(basename "${package_path}")
+            package_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/packages/${package_name}"
+            if curl --fail --silent --location --head "${package_url}" >/dev/null; then
+              echo "Release already contains ${package_name}. Bump pkgrel before rebuilding." >&2
+              exit 1
+            fi
+          done
+
+          sudo -u builduser env \
+            BUILDDIR="${build_dir}" \
+            MAKEFLAGS="-j$(nproc)" \
+            PKGDEST="${output_dir}" \
+            SRCDEST="${source_dir}" \
+            makepkg --cleanbuild --clean --noconfirm
+
+          mapfile -t packages < <(find "${output_dir}" -maxdepth 1 -type f \
+            -name '*.pkg.tar.*' ! -name '*.sig' -print | sort)
+          if (( ${#packages[@]} != 2 )); then
+            printf 'Expected kernel and headers packages, found %d:\n' "${#packages[@]}" >&2
+            printf '  %s\n' "${packages[@]}" >&2
+            exit 1
+          fi
+
+          (
+            cd "${output_dir}"
+            sha256sum -- *.pkg.tar.* > "SHA256SUMS-${VARIANT}"
+          )
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: kernel-${{ matrix.variant }}-${{ github.sha }}
+          path: |
+            output/${{ matrix.variant }}/*.pkg.tar.*
+            output/${{ matrix.variant }}/SHA256SUMS-*
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Update rolling package release
+    needs: [select, build]
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: write
+    container:
+      image: menci/archlinuxarm:base-devel@sha256:14422e0b4a478b66baf03d930917b9a83db6277c93867d94d4265e06a2e7ddf6
+    steps:
+      - name: Download newly built packages
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          pattern: kernel-*-${{ github.sha }}
+          path: incoming
+          merge-multiple: true
+
+      - name: Install release tools
+        shell: bash
+        run: pacman -Syu --noconfirm --needed github-cli jq pacman
+
+      - name: Assemble repository
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SELECTED_VARIANTS: ${{ needs.select.outputs.variants }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+
+          release_exists=false
+          if gh release view packages >/dev/null 2>&1; then
+            release_exists=true
+            gh release download packages --dir dist --pattern '*.pkg.tar.*' || true
+          fi
+
+          mapfile -t variants < <(jq -r '.[]' <<<"${SELECTED_VARIANTS}")
+          for variant in "${variants[@]}"; do
+            find dist -maxdepth 1 -type f \
+              \( -name "${variant}-[0-9]*-aarch64.pkg.tar.*" \
+                 -o -name "${variant}-headers-[0-9]*-aarch64.pkg.tar.*" \) \
+              -delete
+          done
+
+          install -m 0644 incoming/*.pkg.tar.* dist/
+          rm -f dist/*.db dist/*.db.tar.* dist/*.files dist/*.files.tar.*
+
+          for variant in linux-x1e-jens71 linux-x1e-jens72 \
+            linux-x1e-jens72-pdc linux-x1e-t14s-edge; do
+            compgen -G "dist/${variant}-[0-9]*-aarch64.pkg.tar.*" >/dev/null || {
+              echo "Missing kernel package for ${variant}" >&2
+              exit 1
+            }
+            compgen -G "dist/${variant}-headers-[0-9]*-aarch64.pkg.tar.*" >/dev/null || {
+              echo "Missing headers package for ${variant}" >&2
+              exit 1
+            }
+          done
+
+          mapfile -t packages < <(find dist -maxdepth 1 -type f \
+            -name '*.pkg.tar.*' ! -name '*.sig' -print | sort)
+          repo-add dist/linux-x1e-t14s.db.tar.gz "${packages[@]}"
+          for link in dist/linux-x1e-t14s.db dist/linux-x1e-t14s.files; do
+            cp --dereference "${link}" "${link}.resolved"
+            mv "${link}.resolved" "${link}"
+          done
+          (
+            cd dist
+            sha256sum -- *.pkg.tar.* *.db *.db.tar.* *.files *.files.tar.* > SHA256SUMS
+          )
+
+          if [[ ${release_exists} == false ]]; then
+            gh release create packages \
+              --target "${GITHUB_SHA}" \
+              --title 'ThinkPad T14s X1E kernel packages' \
+              --notes 'Rolling Arch Linux ARM package repository. See the repository README for installation details.'
+          fi
+
+      - name: Publish packages and repository database
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SELECTED_VARIANTS: ${{ needs.select.outputs.variants }}
+        run: |
+          set -euo pipefail
+
+          mapfile -t new_assets < <(find incoming -maxdepth 1 -type f \
+            -name '*.pkg.tar.*' ! -name '*.sig' -printf '%f\n' | sort)
+          mapfile -t existing_assets < <(gh release view packages \
+            --json assets --jq '.assets[].name')
+
+          for asset in "${new_assets[@]}"; do
+            if printf '%s\n' "${existing_assets[@]}" | grep -Fxq -- "${asset}"; then
+              echo "Release already contains ${asset}. Bump pkgrel before rebuilding." >&2
+              exit 1
+            fi
+          done
+
+          gh release upload packages incoming/*.pkg.tar.*
+          gh release upload packages \
+            dist/linux-x1e-t14s.db \
+            dist/linux-x1e-t14s.db.tar.gz \
+            dist/linux-x1e-t14s.files \
+            dist/linux-x1e-t14s.files.tar.gz \
+            dist/SHA256SUMS \
+            --clobber
+
+          mapfile -t variants < <(jq -r '.[]' <<<"${SELECTED_VARIANTS}")
+          for asset in "${existing_assets[@]}"; do
+            for variant in "${variants[@]}"; do
+              if [[ ${asset} == ${variant}-[0-9]*-aarch64.pkg.tar.* ||
+                    ${asset} == ${variant}-headers-[0-9]*-aarch64.pkg.tar.* ]]; then
+                gh release delete-asset packages "${asset}" --yes
+                break
+              fi
+            done
+          done

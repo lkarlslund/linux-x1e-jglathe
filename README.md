@@ -51,6 +51,29 @@ The local makepkg configuration controls `SRCDEST`, `PKGDEST`, and parallelism.
 On this machine packages are written to `/home/lak/.cache/makepkg/pkg` and Git
 sources are shared through `/home/lak/.cache/makepkg/src`.
 
+## GitHub builds and releases
+
+GitHub Actions builds kernel and headers packages natively on ARM64 and
+publishes them to the rolling `packages` release. A change confined to one
+`packages/<variant>/` directory builds only that variant. Changes under
+`common/`, to the package-selection script, or to the workflow build all four.
+The workflow can also be run manually for one variant or for all variants.
+
+Every affected PKGBUILD must receive a new `pkgver` or `pkgrel`. Publishing
+refuses to replace an existing package filename, which prevents a changed
+binary from being presented as an old package version.
+
+The rolling release retains the three unchanged kernel pairs, replaces the
+changed kernel and headers pair, and regenerates `linux-x1e-t14s.db` and
+`linux-x1e-t14s.files`. Packages are currently unsigned, so the release is
+suitable for direct download and local `pacman -U` installation. Do not enable
+it as a pacman sync repository with signature checking disabled; package
+signing should be configured before doing that.
+
+Release page:
+
+<https://github.com/lkarlslund/linux-x1e-jglathe/releases/tag/packages>
+
 Install kernel packages with `pacman -U`. Header packages are optional and can
 be installed independently. For example:
 

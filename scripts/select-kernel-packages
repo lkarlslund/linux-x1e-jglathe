@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+variants=(
+  linux-x1e-jens71
+  linux-x1e-jens72
+  linux-x1e-jens72-pdc
+  linux-x1e-t14s-edge
+)
+
+if [[ ${1-} == --all ]]; then
+  printf '%s\n' "${variants[@]}"
+  exit 0
+fi
+
+if (( $# != 0 )); then
+  echo "Usage: $0 [--all]" >&2
+  echo "Without --all, changed paths are read from standard input." >&2
+  exit 2
+fi
+
+declare -A selected=()
+select_all=false
+
+while IFS= read -r path; do
+  case "$path" in
+    common/*|.github/workflows/kernel-packages.yml|scripts/select-kernel-packages)
+      select_all=true
+      ;;
+    packages/linux-x1e-jens71/*)
+      selected[linux-x1e-jens71]=1
+      ;;
+    packages/linux-x1e-jens72/*)
+      selected[linux-x1e-jens72]=1
+      ;;
+    packages/linux-x1e-jens72-pdc/*)
+      selected[linux-x1e-jens72-pdc]=1
+      ;;
+    packages/linux-x1e-t14s-edge/*)
+      selected[linux-x1e-t14s-edge]=1
+      ;;
+  esac
+done
+
+if [[ $select_all == true ]]; then
+  printf '%s\n' "${variants[@]}"
+  exit 0
+fi
+
+for variant in "${variants[@]}"; do
+  [[ ${selected[$variant]+yes} ]] && printf '%s\n' "$variant"
+done
