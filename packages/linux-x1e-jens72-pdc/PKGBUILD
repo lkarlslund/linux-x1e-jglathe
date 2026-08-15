@@ -1,10 +1,10 @@
 pkgbase=linux-x1e-jens72-pdc
 pkgver=7.2.rc6
-pkgrel=5
+pkgrel=4
 
 _variant_desc='Jens 7.2-rc6 with Qualcomm PDC/SS3 v4 suspend support'
 _kernel_repo='https://github.com/lkarlslund/linux-x1e-t14s'
-_commit='170baf53450c7849cbef3485f7d26dae97341304'
+_commit='017dc018715327d9c28d25382d2397920999929d'
 _boot_title='Arch Linux — Jens 7.2-rc6 + PDC/SS3 v4'
 _sort_key='30-x1e-jens72-pdc'
 _kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=1'
