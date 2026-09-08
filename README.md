@@ -12,7 +12,7 @@ replace the boot files or device trees of another variant.
 | `linux-x1e-jens71` | Jens `7.1.7-jg-1` | Stable recovery and daily-use baseline; PSR disabled in its boot entry |
 | `linux-x1e-jens72` | Jens `7.2-rc6-jg-0` | Unmodified Jens 7.2 release-candidate integration |
 | `linux-x1e-jens72-pdc` | Jens `7.2-rc6-jg-0` | Qualcomm PDC/SS3 v4 suspend series plus corrected USB PHY supplies |
-| `linux-x1e-t14s-edge` | Mainline `7.2-rc7` snapshot | Bleeding-edge T14s branch with PDC/SS3, direct PSR SDP flushing, and corrected T14s USB PHY supplies |
+| `linux-x1e-t14s-edge` | Mainline `7.3-rc2` snapshot | Upstream PDC/SS3 and corrected T14s USB PHY supplies, plus direct PSR SDP flushing |
 
 All source revisions are immutable 40-character Git commit IDs in their
 respective `PKGBUILD`. Updating a branch on GitHub does not silently alter a
@@ -26,6 +26,13 @@ The two integration branches are maintained at
 
 The Jens PDC/SS3 branch carries Qualcomm's v4 series. It is experimental,
 especially on firmware that leaves the PDC in secondary-controller mode.
+
+The edge variant pins mainline `28924df2a08f440c73991b83028032c901de2ae4`
+with the nine-line direct PSR SDP flush fix retained. PDC controller support,
+pinctrl wake handling, SS3, the PDC register-span correction, and the T14s USB
+PHY supply corrections are now upstream. The refresh preserves the existing
+edge branch history and OLED EL2 boot layout. Boot and suspend/resume behavior
+still require validation on the target machine.
 
 ## Build
 
