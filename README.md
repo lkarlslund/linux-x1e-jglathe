@@ -12,7 +12,7 @@ replace the boot files or device trees of another variant.
 | `linux-x1e-jens71` | Jens `7.1.7-jg-1` | Stable recovery and daily-use baseline; PSR disabled in its boot entry |
 | `linux-x1e-jens72` | Jens `7.2-rc6-jg-0` | Unmodified Jens 7.2 release-candidate integration |
 | `linux-x1e-jens72-pdc` | Jens `7.2-rc6-jg-0` | Qualcomm PDC/SS3 v4 suspend series plus corrected USB PHY supplies |
-| `linux-x1e-t14s-edge` | Mainline `7.3-rc2` snapshot | Upstream PDC/SS3 and corrected T14s USB PHY supplies, plus direct PSR SDP flushing |
+| `linux-x1e-t14s-edge` | Mainline `7.3-rc2` snapshot | Upstream PDC/SS3 and USB supply fixes, plus PSR and EL2 firmware compatibility |
 
 All source revisions are immutable 40-character Git commit IDs in their
 respective `PKGBUILD`. Updating a branch on GitHub does not silently alter a
@@ -28,11 +28,21 @@ The Jens PDC/SS3 branch carries Qualcomm's v4 series. It is experimental,
 especially on firmware that leaves the PDC in secondary-controller mode.
 
 The edge variant pins mainline `28924df2a08f440c73991b83028032c901de2ae4`
-with the nine-line direct PSR SDP flush fix retained. PDC controller support,
+with the direct PSR SDP flush fix and EL2 firmware compatibility changes.
+PDC controller support,
 pinctrl wake handling, SS3, the PDC register-span correction, and the T14s USB
 PHY supply corrections are now upstream. The refresh preserves the existing
 edge branch history and OLED EL2 boot layout. Boot and suspend/resume behavior
 still require validation on the target machine.
+
+The initial `7.3.rc2-1` package failed to boot with ADSP stream `0x1000`
+SMMU faults. Release `7.3.rc2-2` restores Jens's EL2 SHM bridge ownership
+handling and 40-bit DMA window, removes the firmware-started DSP IOMMU
+mappings, and honors `qcom,broken-reset` using the 7.3 remoteproc attach path.
+Firmware reload/start is rejected for those DSPs and automatic recovery is
+disabled because their reset path is unavailable in EL2. This avoids importing
+the older attach-only ops with missing restart callbacks. A new boot test is
+required; retain the known-working PDC kernel as the default fallback.
 
 ## Build
 

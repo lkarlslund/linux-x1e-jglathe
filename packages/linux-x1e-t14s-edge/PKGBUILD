@@ -1,10 +1,10 @@
 pkgbase=linux-x1e-t14s-edge
 pkgver=7.3.rc2
-pkgrel=1
+pkgrel=2
 
-_variant_desc='mainline 7.3-rc2 with T14s PSR fix'
+_variant_desc='mainline 7.3-rc2 with T14s PSR and EL2 firmware fixes'
 _kernel_repo='https://github.com/lkarlslund/linux-x1e-t14s'
-_commit='f805427eac26668bc89044e817e0e1837a8b1c4f'
+_commit='8a845bd54dc3b768f7a4097544b2616608c5fb76'
 _boot_title='Arch Linux — T14s mainline edge'
 _sort_key='40-x1e-t14s-edge'
 _kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=1'
