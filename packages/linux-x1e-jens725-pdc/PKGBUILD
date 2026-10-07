@@ -1,6 +1,6 @@
 pkgbase=linux-x1e-jens725-pdc
 pkgver=7.2.5
-pkgrel=1
+pkgrel=2
 
 _variant_desc='Jens 7.2.5 with Qualcomm PDC/SS3 v4 suspend support'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'

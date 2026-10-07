@@ -1,0 +1,77 @@
+From 1ac5f77d1f6535ab119056662d98d421cbb6cf3d Mon Sep 17 00:00:00 2001
+From: Jianfeng Liu <liujianfeng1994@gmail.com>
+Date: Wed, 30 Sep 2026 17:28:55 +0800
+Subject: [PATCH] clk: qcom: dispcc-x1e80100: don't disable display PLLs in the
+ unused-clock sweep
+
+UEFI leaves disp_cc_pll0 locked and running for the handover
+framebuffer.  clk_disable_unused() runs before any
+display driver probes, finds it unused (no consumers, no
+CLK_IGNORE_UNUSED) and powers it down through
+alpha_pll_reset_lucid_evo_disable().  When the DPU driver later
+enables mdp_clk, alpha_pll_reset_lucid_evo_prepare() performs a
+full PLL reset and relock.
+
+On X1E80100 that relock can end up marginal, and whether it does is
+a per-boot analog lottery.  A marginal PLL degrades the DPU core
+timing just enough that the DisplayPort controller drops every
+other MTP (micro transfer packet) of the pixel stream fed by the
+DPU.  The result is static black vertical bands on the eDP panel:
+at 2560x1600, 24bpp, 4 lanes, one MTP is 4 * 64 symbols / 3 bytes
+per pixel = 85.33 pixels, so the screen splits into exactly 30
+bands of which every second one is black (20 bands at 16bpp).
+This reproduces on roughly half of all boots and persists for the
+whole boot.
+
+The corruption is invisible to every register or clock-state dump:
+the PLL locks either way, only the lock quality differs, and all
+programmed values (DPU, DP controller MSA/TU, PHY, dispcc) are
+byte-identical between good and bad boots.  The controller's
+internal BIST pattern stays clean on a corrupted boot, pinning the
+failure to the pixel ingest timing fed by the DPU.
+
+Verified on an Acer Swift SFA14-11 (X1E78100):
+  - clk_ignore_unused on the cmdline:                7/7 boots clean
+  - keeping only disp_cc_pll0 from the sweep:       10/10 boots clean
+  - keeping any other clock from the sweep:        still corrupts
+  - with this patch:                                10/10 boots clean
+
+Keep the firmware-provided PLL state by marking disp_cc_pll0
+CLK_IGNORE_UNUSED, the same way gcc drivers protect CPU hfplls
+(cf. gcc-msm8960).  Other drivers using
+clk_alpha_pll_reset_lucid_ole_ops for their display PLLs (sm8550,
+sm8650) may carry the same latent issue.
+
+Fixes: ee3f0739035f5 ("clk: qcom: Add dispcc clock driver for x1e80100")
+Signed-off-by: Jianfeng Liu <liujianfeng1994@gmail.com>
+Assisted-by: LLM
+---
+ drivers/clk/qcom/dispcc-x1e80100.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/drivers/clk/qcom/dispcc-x1e80100.c b/drivers/clk/qcom/dispcc-x1e80100.c
+index 795279609c0b..021776f30b24 100644
+--- a/drivers/clk/qcom/dispcc-x1e80100.c
++++ b/drivers/clk/qcom/dispcc-x1e80100.c
+@@ -94,6 +94,21 @@ static struct clk_alpha_pll disp_cc_pll0 = {
+ 	.clkr = {
+ 		.hw.init = &(const struct clk_init_data) {
+ 			.name = "disp_cc_pll0",
++			/*
++			 * The boot firmware (UEFI) leaves disp_cc_pll0 locked
++			 * and running for the handover framebuffer.
++			 * clk_disable_unused() runs before any display driver
++			 * probes, finds the PLL unused (no consumers, no
++			 * CLK_IGNORE_UNUSED) and powers it down.  The DPU
++			 * driver then has to relock it via the reset-prepare
++			 * sequence.  On X1E80100 that relock can end up
++			 * marginal (per-boot analog lottery), degrading the
++			 * DPU core timing enough to corrupt eDP output at
++			 * MTP granularity (every other micro transfer packet
++			 * delivered blank, on ~50% of boots).  Keeping the
++			 * firmware PLL state avoids the relock entirely.
++			 */
++			.flags = CLK_IGNORE_UNUSED,
+ 			.parent_data = &(const struct clk_parent_data) {
+ 				.index = DT_BI_TCXO,
+ 			},
