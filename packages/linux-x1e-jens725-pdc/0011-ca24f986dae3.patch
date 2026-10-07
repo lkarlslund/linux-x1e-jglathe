@@ -1,0 +1,48 @@
+From ca24f986dae338f166727f1965db49cbfb72a674 Mon Sep 17 00:00:00 2001
+From: Lars Karlslund <8929787+lkarlslund@users.noreply.github.com>
+Date: Sun, 16 Aug 2026 08:22:29 +0200
+Subject: [PATCH] firmware: psci: Avoid suspended timekeeping in diagnostic
+
+---
+ drivers/firmware/psci/psci.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/drivers/firmware/psci/psci.c b/drivers/firmware/psci/psci.c
+index cc71cbb34c63..d191551c3142 100644
+--- a/drivers/firmware/psci/psci.c
++++ b/drivers/firmware/psci/psci.c
+@@ -19,7 +19,6 @@
+ #include <linux/reboot.h>
+ #include <linux/slab.h>
+ #include <linux/suspend.h>
+-#include <linux/timekeeping.h>
+ 
+ #include <uapi/linux/psci.h>
+ 
+@@ -543,8 +542,6 @@ static int psci_system_suspend(unsigned long unused)
+ 
+ static int psci_system_suspend_enter(suspend_state_t state)
+ {
+-	u64 start_ns;
+-	u64 elapsed_ms;
+ 	int raw_ret;
+ 	int ret;
+ 
+@@ -552,13 +549,10 @@ static int psci_system_suspend_enter(suspend_state_t state)
+ 
+ 	/* A value outside the PSCI return-code range means the finisher was skipped. */
+ 	WRITE_ONCE(psci_system_suspend_raw_ret, 0x7fffffff);
+-	start_ns = ktime_get_boottime_ns();
+ 	ret = cpu_suspend(0, psci_system_suspend);
+-	elapsed_ms = div_u64(ktime_get_boottime_ns() - start_ns, NSEC_PER_MSEC);
+ 	raw_ret = READ_ONCE(psci_system_suspend_raw_ret);
+ 
+-	pr_info("SYSTEM_SUSPEND returned: raw=%d linux=%d elapsed=%llu ms\n",
+-		raw_ret, ret, (unsigned long long)elapsed_ms);
++	pr_info("SYSTEM_SUSPEND returned: raw=%d linux=%d\n", raw_ret, ret);
+ 
+ 	return ret;
+ }
+-- 
+2.55.0
+

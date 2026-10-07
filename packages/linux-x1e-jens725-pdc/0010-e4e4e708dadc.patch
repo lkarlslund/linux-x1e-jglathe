@@ -1,0 +1,25 @@
+From e4e4e708dadcd335d454444215c3cee5211d6943 Mon Sep 17 00:00:00 2001
+From: Lars Karlslund <8929787+lkarlslund@users.noreply.github.com>
+Date: Sun, 16 Aug 2026 08:22:28 +0200
+Subject: [PATCH] arm64: dts: qcom: x1e80100: Reduce OS PDC DRV span
+
+---
+ arch/arm64/boot/dts/qcom/hamoa.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+index 2b47e31ada92..e79ceea8aabf 100644
+--- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
++++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+@@ -6400,7 +6400,7 @@ dispcc: clock-controller@af00000 {
+ 
+ 		pdc: interrupt-controller@b220000 {
+ 			compatible = "qcom,x1e80100-pdc", "qcom,pdc";
+-			reg = <0 0x0b220000 0 0x30000>, <0 0x174000f0 0 0x64>;
++			reg = <0 0x0b220000 0 0x10000>, <0 0x174000f0 0 0x64>;
+ 
+ 			qcom,pdc-ranges = <0 480 42>, <42 251 5>,
+ 					  <47 522 52>, <99 609 32>,
+-- 
+2.55.0
+

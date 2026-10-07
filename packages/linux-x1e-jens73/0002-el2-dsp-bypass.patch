@@ -1,0 +1,21 @@
+Subject: arm64: dts: qcom: preserve firmware DSP mappings in generic EL2
+
+Adapt Jens Glathe's T14s-tested fix to his integration tree; retain
+qcom,broken-reset and the existing PAS-specific overlay.
+Source: https://lore.kernel.org/all/20260914-x1-el2-unfuck-v1-1-00d8bc35a635@oldschoolsolutions.biz/
+
+--- a/arch/arm64/boot/dts/qcom/x1-el2.dtso
++++ b/arch/arm64/boot/dts/qcom/x1-el2.dtso
+@@ -68,12 +68,10 @@
+ };
+ 
+ &remoteproc_adsp {
+-	iommus = <&apps_smmu 0x1000 0x80>;
+ 	qcom,broken-reset;
+ };
+ 
+ &remoteproc_cdsp {
+-	iommus = <&apps_smmu 0x0c00 0x0>;
+ 	qcom,broken-reset;
+ };
+ 

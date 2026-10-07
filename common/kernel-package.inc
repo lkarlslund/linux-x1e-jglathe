@@ -25,6 +25,11 @@ _srcname="${pkgbase}-${pkgver}"
 source=(
   "${_srcname}::git+${_kernel_repo}.git#commit=${_commit}"
   'running.config'
+  'ubuntu-arm64.config'
+  'ubuntu-module-exceptions'
+  'prepare-kernel-config'
+  'modules.config'
+  'verify-kernel-config'
   'linux.preset'
   '60-linux.hook'
   '90-linux.hook'
@@ -35,6 +40,11 @@ source=(
 sha256sums=(
   'SKIP'
   'f2e8613c4b593ecb6b9645d5a170dbb43af9075a21b16786ceef1ba788db4fb2'
+  'c24a2ef369c342a46ada88aa5baf3cbea4457413a1f9c22084008a5c3c690d86'
+  '5db84b92995b662039851752d5a9895f84d47a72faccc7e06ee95136c5fe995b'
+  'b5fae3c3f6b6c7a2559937f32345751d7c2c7df305ee90f2942d1467d87c4256'
+  'af3cf2650b1d769af5ae59a1633f1481e40b01d32ba3d89f45ce12c31fcbcaff'
+  '1bb2fd3f0693141584c484793fda6bbc42bc730e0507b43989d75d5f3cd1ab74'
   '01d1b6e61aee68ff3f27909cbed6b5458dade4e8807e229e04265f79777cc4ca'
   '452b8d4d71e1565ca91b1bebb280693549222ef51c47ba8964e411b2d461699c'
   '75f99f5239e03238f88d1a834c50043ec32b1dc568f2cc291b07d04718483919'
@@ -51,25 +61,19 @@ export LOCALVERSION=
 prepare() {
   cd "${_srcname}"
 
+  local kernel_patch
+  for kernel_patch in "${_kernel_patches[@]}"; do
+    patch -Np1 --forward --fuzz=0 < "${srcdir}/${kernel_patch}"
+  done
+
   echo "-${pkgrel}" > localversion.10-pkgrel
   echo "${pkgbase#linux}" > localversion.20-pkgname
 
-  awk '
-    /^# CONFIG_[A-Za-z0-9_]+ is not set$/ { print; next }
-    /^CONFIG_[A-Za-z0-9_]+=.*$/ { print; next }
-  ' "${srcdir}/running.config" > .config
-
-  if [[ -f arch/arm64/configs/qcom_laptops.config ]]; then
-    awk '
-      /^#/ { print; next }
-      /^$/ { print; next }
-      /^# CONFIG_[A-Za-z0-9_]+ is not set$/ { print; next }
-      /^CONFIG_[A-Za-z0-9_]+=.*$/ { print; next }
-    ' arch/arm64/configs/qcom_laptops.config > .qcom_laptops.config
-    scripts/kconfig/merge_config.sh -m .config .qcom_laptops.config
-  fi
-
-  make olddefconfig
+  python "${srcdir}/prepare-kernel-config" "${srcdir}/ubuntu-arm64.config" \
+    "${srcdir}/running.config" "${srcdir}/modules.config"
+  python "${srcdir}/verify-kernel-config" "${srcdir}/modules.config" .config \
+    --ubuntu "${srcdir}/ubuntu-arm64.config" \
+    --exceptions "${srcdir}/ubuntu-module-exceptions"
   make -s kernelrelease > version
   echo "Prepared ${pkgbase} $(<version) from ${_commit}"
 }

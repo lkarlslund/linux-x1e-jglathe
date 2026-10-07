@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Resolve Ubuntu's broad ARM64 baseline while retaining the T14s configuration."""
+import argparse
+from pathlib import Path
+import re
+import subprocess
+
+# Retain both enabled and disabled choices for boot/runtime hardware policy.
+POLICY = re.compile(
+    r"CONFIG_(?:ARM64_(?:4K|16K|64K)_PAGES|ARM64_(?:VA|PA)_BITS.*|"
+    r"PREEMPT(?:_NONE|_VOLUNTARY|_LAZY|_RT|_DYNAMIC)?|HZ(?:_.*)?|"
+    r"CPU_FREQ_DEFAULT_.*|QCOM_TZMEM_MODE_.*|IOMMU_DEFAULT_.*|DRM_MSM.*|"
+    r"LOCALVERSION.*|CMDLINE|CMDLINE_FORCE|CMDLINE_EXTEND|INITRAMFS_SOURCE|"
+    r"MODULE_SIG.*|SYSTEM_TRUSTED_KEYS|SYSTEM_REVOCATION_KEYS|LSM|"
+    r"SECURITY_LOCKDOWN_LSM_EARLY|LOCK_DOWN_KERNEL_FORCE_.*|COMPILE_TEST)$"
+)
+
+
+def config(path):
+    result = {}
+    for line in path.read_text().splitlines():
+        if line.startswith("CONFIG_") and "=" in line:
+            key, value = line.split("=", 1)
+            result[key] = value
+        elif line.startswith("# CONFIG_") and line.endswith(" is not set"):
+            result[line[2:-11]] = "n"
+    return result
+
+
+def write_config(path, values):
+    path.write_text("".join(f"# {key} is not set\n" if value == "n"
+                            else f"{key}={value}\n"
+                            for key, value in values.items()))
+
+
+def run(*args):
+    subprocess.run(args, check=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("ubuntu", type=Path)
+    parser.add_argument("t14s", type=Path)
+    parser.add_argument("modules", type=Path)
+    args = parser.parse_args()
+    target = Path(".config")
+    qcom = Path("arch/arm64/configs/qcom_laptops.config")
+    # Resolve the existing hardware baseline on this exact source revision first.
+    write_config(target, config(args.t14s))
+    if qcom.exists():
+        run("bash", "scripts/kconfig/merge_config.sh", "-m", ".config", str(qcom))
+    run("make", "olddefconfig")
+    hardware = config(target)
+    write_config(Path(".t14s-base.config"), hardware)
+    retained = {key: value for key, value in hardware.items()
+                if value != "n" or POLICY.fullmatch(key)}
+    # I3C=m would demote I3C_OR_I2C and its existing built-in consumers.
+    if hardware.get("CONFIG_I3C_OR_I2C") == "y":
+        retained["CONFIG_I3C"] = "y"
+    write_config(Path(".t14s-preserve.config"), retained)
+    ubuntu = config(args.ubuntu)
+    # Ubuntu carries modular Binder patches absent in some mainline revisions.
+    # Convert old module requests to built-ins when the source now uses bool.
+    symbol_types = {}
+    for path in Path(".").rglob("Kconfig*"):
+        if not path.is_file():
+            continue
+        text = path.read_text(errors="replace")
+        blocks = re.split(r"^\s*(?:menu)?config\s+(\w+)\s*$", text, flags=re.M)
+        for name, block in zip(blocks[1::2], blocks[2::2]):
+            kind = re.search(r"^\s*(?:def_)?(bool|tristate)(?:\s|$)", block, re.M)
+            if kind:
+                symbol_types.setdefault("CONFIG_" + name, set()).add(kind[1])
+    for key, value in ubuntu.items():
+        if value == "m" and symbol_types.get(key) == {"bool"}:
+            ubuntu[key] = "y"
+    # New shared dependency of the existing SENSORS_SBTSI driver in Linux 7.3.
+    if "CONFIG_AMD_SBTSI" in symbol_types:
+        ubuntu["CONFIG_AMD_SBTSI"] = "m"
+    write_config(target, ubuntu)
+    # The upstream Qualcomm fragment intentionally removes general-purpose GPU
+    # and SoC support. Retain its positive hardware fixes, not those reductions.
+    if qcom.exists():
+        write_config(Path(".qcom-enabled.config"),
+                     {key: value for key, value in config(qcom).items() if value != "n"})
+        run("bash", "scripts/kconfig/merge_config.sh", "-m", "-y", ".config",
+            ".qcom-enabled.config")
+    run("bash", "scripts/kconfig/merge_config.sh", "-m", "-y", ".config",
+        ".t14s-preserve.config", str(args.modules))
+    run("make", "olddefconfig")
+    actual = config(target)
+    failures = []
+    for key, value in hardware.items():
+        if POLICY.fullmatch(key):
+            if actual.get(key, "n") != value:
+                failures.append(f"{key}: hardware policy {value} became {actual.get(key, 'n')}")
+        elif value in ("y", "m"):
+            # Derived helper disappears when additional zram codecs are enabled;
+            # ZRAM_BACKEND_LZO and the default compressor remain checked.
+            if key == "CONFIG_ZRAM_BACKEND_FORCE_LZO":
+                continue
+            allowed = {"y", "m"} if value == "m" else {"y"}
+            if actual.get(key) not in allowed:
+                failures.append(f"{key}: existing {value} support became {actual.get(key, 'n')}")
+    if failures:
+        raise SystemExit("T14s configuration regression:\n" + "\n".join(failures))
+    print("Existing T14s features and hardware policy preserved.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,42 @@
+pkgbase=linux-x1e-jens725-pdc
+pkgver=7.2.5
+pkgrel=1
+
+_variant_desc='Jens 7.2.5 with Qualcomm PDC/SS3 v4 suspend support'
+_kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
+_commit='e57ec2987d4540fa89280d349f79c4d9bcd7cf27'
+_boot_title='Arch Linux — Jens 7.2.5 + PDC/SS3 v4'
+_sort_key='35-x1e-jens725-pdc'
+_kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=1'
+
+# Carry the rc6 PDC/SS3 series and diagnostics in this build repository.
+# The USB PHY supply fix is already included upstream; keyboard wake is retained.
+_kernel_patches=(
+  '0001-0af361e3ec53.patch'
+  '0002-7b2037358256.patch'
+  '0003-eba4c915cd0e.patch'
+  '0004-4341eb94c03f.patch'
+  '0005-e4cb1745935f.patch'
+  '0006-a2756eb23499.patch'
+  '0007-71a139f5e2b0.patch'
+  '0008-017dc0187153.patch'
+  '0009-fff913682b4a.patch'
+  '0010-e4e4e708dadc.patch'
+  '0011-ca24f986dae3.patch'
+)
+
+source "${startdir}/../../common/kernel-package.inc"
+source+=("${_kernel_patches[@]}")
+sha256sums+=(
+  '3666a132814738148775f47bffe52ca51272a0b80f0c2f946dba4fa925689798'
+  '3fc480de5690ae572c1b21bb06e9008355a552416961463b58f7bc98d2b7e481'
+  'f897b196ee784e5156474815e90ba2e93587cf0c24ffd1266290d1f520abfc20'
+  '273ac142eb122b0bdc3c737174545da350a11b8c4c7fe2d853997de010bf3479'
+  '787e81d79a8fb1aefa0e8d6aa9cef3c1f30bd54310909ea1afdcebe808b9b6d2'
+  'caf905e04a21ca99c9d7944471f439b2315da47d6d00a3f3b7eda96b3f0920cc'
+  '146ace25ae7ad989c399a4977493fc41e211f6606d5fc24abb0d7d0823616a86'
+  '4849c5ca00b6345327390b91fb1abbe83ce2644fac6a2d355bd314007bf144c3'
+  '52ee6266f5508ae594f844b2286dcb9574a76fe2db1be82c43b15ba34d654e43'
+  '28a7343925e1b47a3c2d5ee7c4a4bb643f603efc103c44884af0043359a7a784'
+  '06cbe1647dbf8651db029e692f5332306de06b3a1c93f030bf752e33c3703e0f'
+)

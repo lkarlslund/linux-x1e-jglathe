@@ -1,0 +1,22 @@
+Subject: remoteproc: qcom_q6v5: resolve stop-handshake conflict
+
+Keep the running-state guard: it permits logical crashes and attached DSPs
+to send SMP2P stop while avoiding a handshake after watchdog/fatal IRQs.
+The source pin contains literal conflict markers from 0ca7f0fc41200.
+
+--- a/drivers/remoteproc/qcom_q6v5.c
++++ b/drivers/remoteproc/qcom_q6v5.c
+@@ -272,13 +272,8 @@
+ 
+ 	q6v5->running = false;
+ 
+-<<<<<<< HEAD
+ 	/* A watchdog/fatal IRQ clears running; logical crashes still need a stop. */
+ 	if (!was_running || qcom_sysmon_shutdown_acked(sysmon))
+-=======
+-	/* Don't perform SMP2P dance if remote crashed or already stopped */
+-	if (q6v5->rproc->state == RPROC_CRASHED || qcom_sysmon_shutdown_acked(sysmon))
+->>>>>>> 0ca7f0fc41200 (remoteproc: qcom_q6v5: Send SMP2P stop signal in attached/detached state)
+ 		return 0;
+ 
+ 	qcom_smem_state_update_bits(q6v5->state,

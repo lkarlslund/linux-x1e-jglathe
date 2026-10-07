@@ -3,10 +3,8 @@ set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 all_variants=(
-  linux-x1e-jens71
-  linux-x1e-jens72
-  linux-x1e-jens72-pdc
-  linux-x1e-t14s-edge
+  linux-x1e-jens725-pdc
+  linux-x1e-jens73
 )
 
 usage() {

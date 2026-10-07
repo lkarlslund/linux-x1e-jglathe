@@ -2,10 +2,8 @@
 set -euo pipefail
 
 variants=(
-  linux-x1e-jens71
-  linux-x1e-jens72
-  linux-x1e-jens72-pdc
-  linux-x1e-t14s-edge
+  linux-x1e-jens725-pdc
+  linux-x1e-jens73
 )
 
 if [[ ${1-} == --all ]]; then
@@ -27,17 +25,11 @@ while IFS= read -r path; do
     common/*|.github/workflows/kernel-packages.yml|scripts/select-kernel-packages)
       select_all=true
       ;;
-    packages/linux-x1e-jens71/*)
-      selected[linux-x1e-jens71]=1
+    packages/linux-x1e-jens725-pdc/*)
+      selected[linux-x1e-jens725-pdc]=1
       ;;
-    packages/linux-x1e-jens72/*)
-      selected[linux-x1e-jens72]=1
-      ;;
-    packages/linux-x1e-jens72-pdc/*)
-      selected[linux-x1e-jens72-pdc]=1
-      ;;
-    packages/linux-x1e-t14s-edge/*)
-      selected[linux-x1e-t14s-edge]=1
+    packages/linux-x1e-jens73/*|packages/linux-x1e-t14s-edge/*)
+      selected[linux-x1e-jens73]=1
       ;;
   esac
 done
@@ -48,5 +40,7 @@ if [[ $select_all == true ]]; then
 fi
 
 for variant in "${variants[@]}"; do
-  [[ ${selected[$variant]+yes} ]] && printf '%s\n' "$variant"
+  if [[ ${selected[$variant]+yes} ]]; then
+    printf '%s\n' "$variant"
+  fi
 done

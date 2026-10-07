@@ -1,0 +1,14 @@
+# Symbols still present but incompatible with the preserved T14s configuration.
+CONFIG_INTERCONNECT_QCOM_MSM8909 ARM32-only driver; requires ARM or COMPILE_TEST.
+CONFIG_INTERCONNECT_QCOM_MSM8974 ARM32-only driver; requires ARM or COMPILE_TEST.
+CONFIG_INTERCONNECT_QCOM_SDX55 ARM32-only driver; requires ARM or COMPILE_TEST.
+CONFIG_INTERCONNECT_QCOM_SDX65 ARM32-only driver; requires ARM or COMPILE_TEST.
+CONFIG_USB_GPIO_VBUS Mutually exclusive with the existing USB_CONN_GPIO driver.
+# Additional restrictions in the mainline edge source (enabled when supported).
+CONFIG_INPUT_SOC_BUTTON_ARRAY X86-only in the edge source.
+CONFIG_TCG_ATMEL X86-only in the edge source.
+CONFIG_DRM_VRAM_HELPER Derived helper; its remaining vboxvideo consumer is X86-only in edge.
+CONFIG_QCOM_A7PLL ARM32-only in the edge source.
+CONFIG_IPQ_GCC_4019 ARM32-only in the edge source.
+CONFIG_QCOM_GSBI ARM32-only in the edge source.
+CONFIG_CRYPTO_DEV_QCE Marked BROKEN in edge due to secure-world hardware access races.

@@ -1,0 +1,60 @@
+pkgbase=linux-x1e-jens73
+pkgver=7.3.rc3
+pkgrel=1
+
+_variant_desc='Jens 7.3-rc3 Snapdragon laptop integration'
+_kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
+_commit='3f0d8691afa098ba378d7d5a3968f03219887719'
+_boot_title='Arch Linux — Jens 7.3-rc3'
+_sort_key='40-x1e-jens73'
+_kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=0'
+
+_kernel_patches=(
+  '0001-qrtr-resume-hello.patch'
+  '0002-el2-dsp-bypass.patch'
+  '0003-revert-x1e-qos.patch'
+  '0004-remoteproc-deleting.patch'
+  '0005-hamoa-adc-channel.patch'
+  '0006-restore-hamoa-camera-nodes.patch'
+  '0007-hamoa-board-adc-api.patch'
+  '0008-q6v5-resolve-conflict.patch'
+  '0009-pas-context-release.patch'
+)
+
+source "${startdir}/../../common/kernel-package.inc"
+source+=("${_kernel_patches[@]}")
+sha256sums+=(
+  'de381c3444ef865f6e6d16e2542ccc53adce9938b38a27d381ab13d1ff342901'
+  '0873f8c61482f704a22173df05f4042f0e0a17661b8869f00f6848cb1e0b79dc'
+  '1748b16b2dcd1d56daece6866212e71489e1340c5cd5bfb5094537f60215b297'
+  '45b50d06e89a54d64b1df14cdbd8e713d85fb68bd1447e5bfbe9ce87698f35e5'
+  'e4bbf76e26ac96983ad1bb3e069949897e46186d36acc91eaa0288293211f007'
+  'f5ffd2adc8e789a0b90973525026779da809fa4e1f71f2318965632d5229fd34'
+  '8b6c8116a5690671794b77d1ad7602069f46b14d1200f6fa78af5f7d7242ed04'
+  '944685227dd89bc1d9a5bfec1ed8bbe88965173127f43e05e401cbbf87d286da'
+  '66e2bc8b6dbaa65c8f41bdc79c9e71f861703a81ae917e780b53886528cd2b0b'
+)
+
+# Rename the existing 7.3 package without leaving two installed variants.
+package_linux-x1e-jens73() {
+  _package
+  replaces=(linux-x1e-t14s-edge)
+  conflicts=(linux-x1e-t14s-edge)
+}
+
+package_linux-x1e-jens73-headers() {
+  _package-headers
+  replaces=(linux-x1e-t14s-edge-headers)
+  conflicts=(linux-x1e-t14s-edge-headers)
+}
+
+# This package installs only T14s DTBs. Other boards in this integration tree
+# include missing files (for example x1-acer-swift-14.dtsi).
+build() {
+  cd "${_srcname}"
+  make -j"$(nproc)" Image Image.gz modules \
+    qcom/x1e78100-lenovo-thinkpad-t14s.dtb \
+    qcom/x1e78100-lenovo-thinkpad-t14s-el2.dtb \
+    qcom/x1e78100-lenovo-thinkpad-t14s-oled.dtb \
+    qcom/x1e78100-lenovo-thinkpad-t14s-oled-el2.dtb
+}

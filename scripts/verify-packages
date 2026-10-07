@@ -3,10 +3,8 @@ set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 variants=(
-  linux-x1e-jens71
-  linux-x1e-jens72
-  linux-x1e-jens72-pdc
-  linux-x1e-t14s-edge
+  linux-x1e-jens725-pdc
+  linux-x1e-jens73
 )
 declare -A seen_boot_paths=()
 declare -A seen_dtb_paths=()
@@ -29,7 +27,7 @@ for variant in "${variants[@]}"; do
     exit 1
   }
 
-  for asset in running.config linux.preset mkinitcpio.conf 60-linux.hook 90-linux.hook loader-entry.conf; do
+  for asset in ubuntu-arm64.config ubuntu-module-exceptions prepare-kernel-config running.config modules.config verify-kernel-config linux.preset mkinitcpio.conf 60-linux.hook 90-linux.hook loader-entry.conf; do
     [[ -e ${package_dir}/${asset} ]] || {
       echo "${variant}: missing ${asset}" >&2
       exit 1

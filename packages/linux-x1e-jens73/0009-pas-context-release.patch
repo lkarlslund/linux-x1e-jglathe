@@ -1,0 +1,20 @@
+Subject: remoteproc: qcom_q6v5_pas: release the correct PAS context
+
+The integration switched pas_ctx to struct qcom_pas_context but left two
+old SCM release calls in qcom_pas_unprepare. Use the same context release
+helper as all other paths in this driver.
+
+--- a/drivers/remoteproc/qcom_q6v5_pas.c
++++ b/drivers/remoteproc/qcom_q6v5_pas.c
+@@ -221,9 +221,9 @@
+ 	 * auth_and_reset() was successful, but in other cases clean it up
+ 	 * here.
+ 	 */
+-	qcom_scm_pas_metadata_release(pas->pas_ctx);
++	qcom_pas_metadata_release(pas->pas_ctx);
+ 	if (pas->dtb_pas_id)
+-		qcom_scm_pas_metadata_release(pas->dtb_pas_ctx);
++		qcom_pas_metadata_release(pas->dtb_pas_ctx);
+ 
+ 	return 0;
+ }

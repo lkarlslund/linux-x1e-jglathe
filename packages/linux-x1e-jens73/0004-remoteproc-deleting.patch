@@ -1,0 +1,15 @@
+Subject: remoteproc: use the deletion flag in rproc_boot
+
+The integrated core already sets deleting in rproc_del and checks it in recovery. Use the same flag in the remaining stale boot guard.
+
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -1957,7 +1957,7 @@
+ 		return ret;
+ 	}
+ 
+-	if (rproc->state == RPROC_DELETED) {
++	if (READ_ONCE(rproc->deleting)) {
+ 		ret = -ENODEV;
+ 		dev_err(dev, "can't boot deleted rproc %s\n", rproc->name);
+ 		goto unlock_mutex;

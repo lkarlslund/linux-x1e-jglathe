@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+"""Fail if Kconfig drops a required feature; built-ins also satisfy module requests."""
+import argparse
+from pathlib import Path
+import re
+
+
+def read_config(path):
+    return dict(line.strip().split("=", 1) for line in path.read_text().splitlines()
+                if line.startswith("CONFIG_") and "=" in line)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("requirements", type=Path)
+    parser.add_argument("config", type=Path)
+    parser.add_argument("--ubuntu", type=Path)
+    parser.add_argument("--exceptions", type=Path)
+    parser.add_argument("--source", type=Path, default=Path("."))
+    args = parser.parse_args()
+    required = read_config(args.requirements)
+    if not required:
+        parser.error("requirements fragment is empty")
+    actual = read_config(args.config)
+    failures = []
+    for symbol, wanted in required.items():
+        allowed = {"m", "y"} if wanted == "m" else {wanted}
+        if actual.get(symbol) not in allowed:
+            failures.append(f"{symbol}: need {wanted}, got {actual.get(symbol, 'unset')}")
+    if args.ubuntu:
+        symbols = set()
+        for path in args.source.rglob("Kconfig*"):
+            if path.is_file():
+                symbols.update("CONFIG_" + name for name in re.findall(
+                    r"^\s*(?:menu)?config\s+(\w+)", path.read_text(errors="replace"), re.M))
+        exceptions = {}
+        if args.exceptions:
+            for line in args.exceptions.read_text().splitlines():
+                if line.startswith("CONFIG_"):
+                    name, reason = line.split(None, 1)
+                    exceptions[name] = reason
+        removed = []
+        enabled = 0
+        for symbol, wanted in read_config(args.ubuntu).items():
+            if wanted != "m":
+                continue
+            if actual.get(symbol) in {"m", "y"}:
+                enabled += 1
+            elif symbol not in symbols:
+                removed.append(symbol)
+            elif symbol in exceptions:
+                print(f"Ubuntu exception: {symbol}: {exceptions[symbol]}")
+            else:
+                failures.append(f"{symbol}: Ubuntu module was dropped by Kconfig")
+        print(f"Ubuntu baseline: {enabled} module features enabled; "
+              f"{len(removed)} symbols absent from this kernel source.")
+        Path("ubuntu-removed-symbols.txt").write_text("\n".join(sorted(removed)) + "\n")
+    if failures:
+        raise SystemExit("Required kernel features missing after Kconfig resolution:\n" + "\n".join(failures))
+    print(f"Verified {len(required)} required kernel features.")
+
+
+if __name__ == "__main__":
+    main()

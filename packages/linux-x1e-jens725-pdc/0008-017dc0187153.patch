@@ -1,0 +1,29 @@
+From 017dc018715327d9c28d25382d2397920999929d Mon Sep 17 00:00:00 2001
+From: Lars Karlslund <8929787+lkarlslund@users.noreply.github.com>
+Date: Fri, 14 Aug 2026 20:24:37 +0200
+Subject: [PATCH] cpuidle: psci: Log raw s2idle domain suspend failures
+
+---
+ drivers/cpuidle/cpuidle-psci.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/cpuidle/cpuidle-psci.c b/drivers/cpuidle/cpuidle-psci.c
+index dcf20ea5ef5e..29bee35974c2 100644
+--- a/drivers/cpuidle/cpuidle-psci.c
++++ b/drivers/cpuidle/cpuidle-psci.c
+@@ -87,7 +87,11 @@ static __cpuidle int __psci_enter_domain_idle_state(struct cpuidle_device *dev,
+ 		state = ds->state;
+ 
+ 	trace_psci_domain_idle_enter(dev->cpu, state, s2idle);
+-	ret = psci_cpu_suspend_enter(state) ? -1 : idx;
++	ret = psci_cpu_suspend_enter(state);
++	if (ret && s2idle && ds->state)
++		pr_warn_ratelimited("CPU%d: PSCI s2idle state %#x failed: %d\n",
++				    dev->cpu, state, ret);
++	ret = ret ? -1 : idx;
+ 	trace_psci_domain_idle_exit(dev->cpu, state, s2idle);
+ 
+ 	if (s2idle)
+-- 
+2.55.0
+

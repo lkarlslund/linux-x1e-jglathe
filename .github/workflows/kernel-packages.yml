@@ -6,14 +6,12 @@ on:
       variant:
         description: Kernel variant to build and publish
         required: true
-        default: linux-x1e-jens72-pdc
+        default: linux-x1e-jens725-pdc
         type: choice
         options:
           - all
-          - linux-x1e-jens71
-          - linux-x1e-jens72
-          - linux-x1e-jens72-pdc
-          - linux-x1e-t14s-edge
+          - linux-x1e-jens725-pdc
+          - linux-x1e-jens73
       build_headers:
         description: Build and publish matching kernel headers packages
         required: true
@@ -88,7 +86,7 @@ jobs:
           path: |
             .ccache/${{ matrix.variant }}
             .sources/${{ matrix.variant }}
-          key: kernel-${{ runner.arch }}-${{ matrix.variant }}-${{ hashFiles(format('packages/{0}/PKGBUILD', matrix.variant), 'common/kernel-package.inc', 'common/running.config') }}
+          key: kernel-${{ runner.arch }}-${{ matrix.variant }}-${{ hashFiles(format('packages/{0}/PKGBUILD', matrix.variant), format('packages/{0}/*.patch', matrix.variant), 'common/kernel-package.inc', 'common/running.config', 'common/modules.config', 'common/ubuntu-arm64.config', 'common/ubuntu-module-exceptions', 'scripts/prepare-kernel-config', 'scripts/verify-kernel-config') }}
           restore-keys: |
             kernel-${{ runner.arch }}-${{ matrix.variant }}-
 
@@ -210,6 +208,12 @@ jobs:
           fi
 
           mapfile -t variants < <(jq -r '.[]' <<<"${SELECTED_VARIANTS}")
+          # Publishing the renamed 7.3 package retires the old edge assets.
+          if [[ " ${variants[*]} " == *" linux-x1e-jens73 "* ]]; then
+            variants+=(linux-x1e-t14s-edge)
+          fi
+          # Retired variants are removed from the release on any publish.
+          variants+=(linux-x1e-jens71 linux-x1e-jens72 linux-x1e-jens72-pdc)
           for variant in "${variants[@]}"; do
             find dist -maxdepth 1 -type f \
               \( -name "${variant}-[0-9]*-aarch64.pkg.tar.*" \
@@ -220,13 +224,20 @@ jobs:
           install -m 0644 incoming/*.pkg.tar.* dist/
           rm -f dist/*.db dist/*.db.tar.* dist/*.files dist/*.files.tar.*
 
-          for variant in linux-x1e-jens71 linux-x1e-jens72 \
-            linux-x1e-jens72-pdc linux-x1e-t14s-edge; do
+          # Selected variants were validated by the build job. Keep the
+          # 7.2.5 PDC family available during the 7.3 package rename.
+          for variant in linux-x1e-jens725-pdc; do
             compgen -G "dist/${variant}-[0-9]*-aarch64.pkg.tar.*" >/dev/null || {
               echo "Missing kernel package for ${variant}" >&2
               exit 1
             }
           done
+
+          if ! compgen -G 'dist/linux-x1e-jens73-[0-9]*-aarch64.pkg.tar.*' >/dev/null &&
+             ! compgen -G 'dist/linux-x1e-t14s-edge-[0-9]*-aarch64.pkg.tar.*' >/dev/null; then
+            echo "Missing 7.3 kernel package" >&2
+            exit 1
+          fi
 
           mapfile -t packages < <(find dist -maxdepth 1 -type f \
             -name '*.pkg.tar.*' ! -name '*.sig' -print | sort)
@@ -278,6 +289,12 @@ jobs:
             --clobber
 
           mapfile -t variants < <(jq -r '.[]' <<<"${SELECTED_VARIANTS}")
+          # Publishing the renamed 7.3 package retires the old edge assets.
+          if [[ " ${variants[*]} " == *" linux-x1e-jens73 "* ]]; then
+            variants+=(linux-x1e-t14s-edge)
+          fi
+          # Retired variants are removed from the release on any publish.
+          variants+=(linux-x1e-jens71 linux-x1e-jens72 linux-x1e-jens72-pdc)
           for asset in "${existing_assets[@]}"; do
             for variant in "${variants[@]}"; do
               if [[ ${asset} == ${variant}-[0-9]*-aarch64.pkg.tar.* ||
