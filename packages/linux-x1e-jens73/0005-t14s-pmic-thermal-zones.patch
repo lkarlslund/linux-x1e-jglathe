@@ -1,6 +1,6 @@
-From f9018bd95bec464bb6f570961d081330a0122b5e Mon Sep 17 00:00:00 2001
+From 5946fb15e5b43b00d36b2b4833a9ad2f53330fbb Mon Sep 17 00:00:00 2001
 From: Daniel Lezcano <daniel.lezcano@oss.qualcomm.com>
-Date: Wed, 7 Oct 2026 15:26:21 +0200
+Date: Wed, 14 Oct 2026 21:35:24 +0200
 Subject: [PATCH] arm64: dts: qcom: x1e78100-thinkpad-t14s: Add thermal zones
  for PMICs
 MIME-Version: 1.0
@@ -59,24 +59,36 @@ Finally, enable ADC thermal monitoring on the corresponding PMK8550 VADC
 channels used by these thermal zones.
 
 Signed-off-by: Daniel Lezcano <daniel.lezcano@oss.qualcomm.com>
-
-Link: https://lore.kernel.org/r/20261001181055.9149-1-daniel.lezcano@oss.qualcomm.com
-[lak: rebased onto Jens 7.3-rc3 (context offsets only)]
+Reviewed-by: Hans de Goede <johannes.goede@oss.qualcomm.com>
 ---
  .../qcom/x1e78100-lenovo-thinkpad-t14s.dtsi   | 105 ++++++++++++++++++
  1 file changed, 105 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/qcom/x1e78100-lenovo-thinkpad-t14s.dtsi b/arch/arm64/boot/dts/qcom/x1e78100-lenovo-thinkpad-t14s.dtsi
-index 0c933d115585..3baaff82487f 100644
+index 0c933d115585..7eee1c2ef016 100644
 --- a/arch/arm64/boot/dts/qcom/x1e78100-lenovo-thinkpad-t14s.dtsi
 +++ b/arch/arm64/boot/dts/qcom/x1e78100-lenovo-thinkpad-t14s.dtsi
-@@ -26,6 +26,81 @@ aliases {
- 		serial1 = &uart14;
+@@ -648,6 +648,81 @@ vreg_pmu_pcie_1p8: ldo9 {
+ 			};
+ 		};
  	};
- 
++
 +	thermal-zones {
-+		soc-thermal {
-+			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX1_GPIO_100K_PU(1)>;
++		backcover-thermal {
++			critical-action = "shutdown";
++			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX1_THM_100K_PU(1)>;
++
++			trips {
++				backcover-critical {
++					temperature = <73000>;
++					hysteresis = <1000>;
++					type = "critical";
++				};
++			};
++		};
++
++		east-thermal {
++			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX4_THM_100K_PU(1)>;
 +		};
 +
 +		keyboard-thermal {
@@ -119,40 +131,26 @@ index 0c933d115585..3baaff82487f 100644
 +			};
 +		};
 +
-+		backcover-thermal {
-+			critical-action = "shutdown";
-+			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX1_THM_100K_PU(1)>;
-+
-+			trips {
-+				backcover-critical {
-+					temperature = <73000>;
-+					hysteresis = <1000>;
-+					type = "critical";
-+				};
-+			};
++		sdx-thermal {
++			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX3_THM_100K_PU(1)>;
 +		};
 +
 +		smb-thermal {
 +			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX2_THM_100K_PU(1)>;
 +		};
 +
-+		sdx-thermal {
-+			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX3_THM_100K_PU(1)>;
-+		};
-+
-+		east-thermal {
-+			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX4_THM_100K_PU(1)>;
++		soc-thermal {
++			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX1_GPIO_100K_PU(1)>;
 +		};
 +
 +		west-thermal {
 +			thermal-sensors = <&pmk8550_vadc ADC5_GEN3_AMUX5_THM_100K_PU(1)>;
 +		};
 +	};
-+
- 	wcd938x: audio-codec {
- 		compatible = "qcom,wcd9385-codec";
+ };
  
-@@ -1968,6 +2043,36 @@ bluetooth {
+ &apps_rsc {
+@@ -1596,6 +1671,36 @@ usb0_pwr_1p15_reg_en: usb0-pwr-1p15-reg-en-state {
  	};
  };
  
@@ -186,6 +184,6 @@ index 0c933d115585..3baaff82487f 100644
 +	};
 +};
 +
- &usb_1_ss0_hsphy {
- 	vdd-supply = <&vreg_l3j_0p8>;
- 	vdda12-supply = <&vreg_l2j_1p2>;
+ &qupv3_0 {
+ 	status = "okay";
+ };

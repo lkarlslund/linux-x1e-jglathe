@@ -1,4 +1,4 @@
-From 1ac5f77d1f6535ab119056662d98d421cbb6cf3d Mon Sep 17 00:00:00 2001
+From f001e500dd7a1b3fd55fdcd33b6f27fdccdced4a Mon Sep 17 00:00:00 2001
 From: Jianfeng Liu <liujianfeng1994@gmail.com>
 Date: Wed, 30 Sep 2026 17:28:55 +0800
 Subject: [PATCH] clk: qcom: dispcc-x1e80100: don't disable display PLLs in the

@@ -1,44 +1,32 @@
 pkgbase=linux-x1e-jens73
-pkgver=7.3.rc6
+pkgver=7.3.rc7
 pkgrel=1
 
-_variant_desc='Jens 7.3-rc3 Snapdragon laptop integration updated to 7.3-rc6'
+_variant_desc='Jens 7.3-rc7 Snapdragon laptop integration'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
-_commit='3f0d8691afa098ba378d7d5a3968f03219887719'
-_boot_title='Arch Linux — Jens 7.3-rc6'
+_commit='b1482e1e1590306027ebf5ebd6d7df1ceab84ec5'
+_boot_title='Arch Linux — Jens 7.3-rc7'
 _sort_key='40-x1e-jens73'
 _kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=0'
 
 _kernel_patches=(
-  '0000-linux-7.3-rc3-to-rc6.patch'
-  '0002-el2-dsp-bypass.patch'
-  '0004-remoteproc-deleting.patch'
-  '0005-hamoa-adc-channel.patch'
-  '0006-restore-hamoa-camera-nodes.patch'
-  '0007-hamoa-board-adc-api.patch'
-  '0008-q6v5-resolve-conflict.patch'
-  '0009-pas-context-release.patch'
-  '0010-dispcc-x1e80100-keep-pll0.patch'
-  '0011-battmgr-x1e80100-capacity.patch'
-  '0012-t14s-pmic-thermal-zones.patch'
-  '0013-t14s-ec-reset-reserved.patch'
+  '0001-dispcc-x1e80100-keep-pll0.patch'
+  '0002-battmgr-x1e80100-capacity.patch'
+  '0003-battmgr-report-full.patch'
+  '0004-battmgr-notify-charger-online.patch'
+  '0005-t14s-pmic-thermal-zones.patch'
+  '0006-t14s-ec-reset-reserved.patch'
 )
 
 source "${startdir}/../../common/kernel-package.inc"
 source+=("${_kernel_patches[@]}")
 sha256sums+=(
-  'a845fc612fc3845927a97d8d4a4440a2208fa21457329135ad715e4f0531940e'
-  '0873f8c61482f704a22173df05f4042f0e0a17661b8869f00f6848cb1e0b79dc'
-  '45b50d06e89a54d64b1df14cdbd8e713d85fb68bd1447e5bfbe9ce87698f35e5'
-  'e4bbf76e26ac96983ad1bb3e069949897e46186d36acc91eaa0288293211f007'
-  'f5ffd2adc8e789a0b90973525026779da809fa4e1f71f2318965632d5229fd34'
-  '8b6c8116a5690671794b77d1ad7602069f46b14d1200f6fa78af5f7d7242ed04'
-  '944685227dd89bc1d9a5bfec1ed8bbe88965173127f43e05e401cbbf87d286da'
-  '66e2bc8b6dbaa65c8f41bdc79c9e71f861703a81ae917e780b53886528cd2b0b'
-  '33bb8b7e8e5118b905d425e4dda70c160a6d771ab602a1479fd83ece9edb8a0c'
-  '72a0b9f7d7907c1649b110a794138db6e360ddfce21a5edc25597589e730e9a1'
-  '34f2305d3cca2135d4cd303a88b1790d623b4d20538dbfcdae700e0df730ebb2'
-  'ae5d0ac61548ec0db6fb6a5cd571c00ea595b51f6de68a384b12ca87799cd2ad'
+  '2efa76aad27f3be69f5e18d4a3c2dc3f74e7a27bde3557ed6227a2b6295acbb0'
+  '34aeb97b2df848e64661d3f26978bd055df77e517795866f78d547a529143330'
+  '05755195355377e3c877e3e269db5bd566184a28c5f7e956811cc3d4dc1d3718'
+  '51fac128d971b67f1f635c7e75c8054503aeb0cd69821ce17463039c8bb93b46'
+  'aed805933247fb96e4aac492575f6dce75043c8a02588d34219ad73cb0de535a'
+  'f05e213771e854d40c8fa201f032833a4f00d7b3da6d765aac389965a9ac994a'
 )
 
 # Rename the existing 7.3 package without leaving two installed variants.

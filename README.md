@@ -10,7 +10,7 @@ replace the boot files or device trees of another variant.
 | Package | Base | Purpose |
 | --- | --- | --- |
 | `linux-x1e-jens725-pdc` | Jens `7.2.5-jg-0` | Stable daily-use kernel with the rc6 PDC/SS3 v4 series and diagnostics |
-| `linux-x1e-jens73` | Jens `7.3-rc3-jg-0` + mainline 7.3-rc6 | The single 7.3 variant; Jens's Snapdragon laptop integration with the shared Ubuntu module baseline |
+| `linux-x1e-jens73` | Jens `7.3-rc7-jg-0` | The single 7.3 variant; Jens's Snapdragon laptop integration with the shared Ubuntu module baseline |
 
 All source revisions are immutable 40-character Git commit IDs in their
 respective `PKGBUILD`. Updating a branch on GitHub does not silently alter a
@@ -31,46 +31,40 @@ especially on firmware that leaves the PDC in secondary-controller mode.
 
 ## Jens 7.3 variant
 
-`linux-x1e-jens73` pins Jens's 7.3-rc3 commit
-`3f0d8691afa098ba378d7d5a3968f03219887719`. It replaces and conflicts with
+`linux-x1e-jens73` pins Jens's 7.3-rc7 commit
+`b1482e1e1590306027ebf5ebd6d7df1ceab84ec5` (`jg/ubuntu-qcom-x1e-7.3rc`,
+7.3-rc7-jg-0). It replaces and conflicts with
 `linux-x1e-t14s-edge`; matching headers replace the old edge headers too.
 Installing it replaces the old 7.3 package and its loader entry with
-`linux-x1e-jens73.conf`, titled **Arch Linux — Jens 7.3-rc6**.
+`linux-x1e-jens73.conf`, titled **Arch Linux — Jens 7.3-rc7**.
 Publishing this variant also retires old edge release assets.
 
 The machine-local ASPM-v3 diagnostic loader entry pointed to the same old
 kernel files; it has been preserved outside the entries directory as
 `/boot/loader/linux-x1e-t14s-edge-aspm-v3.conf.disabled`.
 
-This uses Jens's Snapdragon integration, including upstream PDC/SS3, with
-checksummed patches kept in this recipe:
+Jens's 7.3-rc7 tree already contains mainline rc7 (including the QRTR resume
+handshake and the X1E QoS revert), his EL2 remoteproc attach rework with the
+ADSP/CDSP IOMMU mappings removed from the generic overlay, and fixes for the
+duplicate Hamoa ADC node, missing camera nodes, remoteproc deletion guard and
+PAS context release. The local integration patches previously needed on
+7.3-rc3/rc6 are therefore no longer carried.
 
-- `0000`: the mainline `v7.3-rc3..v7.3-rc6` incremental diff. It includes the
-  QRTR Wi-Fi resume handshake (`6a5719cc3ef2`) and the X1E QoS revert
-  (`5a8b2cc36e79`), which were previously carried as local patches 0001/0003.
-  Two conflicts with Jens's tree are resolved in place (see the patch header);
-  mainline's "don't enable handover IRQ on attach" is not needed with Jens's
-  guarded `qcom_q6v5_attach()`.
-- Adapt Jens's September 14 EL2 fix: remove ADSP/CDSP IOMMU mappings from the
-  generic overlay, preserving `qcom,broken-reset` and the PAS-specific overlay.
-- Pending upstream fixes from linux-arm-msm (October 2026):
-  - `dispcc-x1e80100`: keep `disp_cc_pll0` out of the unused-clock sweep
-    (marginal PLL relock causing black eDP bands / boot display problems).
-  - `qcom_battmgr`: report `capacity` on X1E80100.
-  - T14s PMIC thermal zones (Daniel Lezcano v2): keyboard passive trip at the
-    EC alert temperature (57.85°C) and 73°C critical trips. These require
-    `QCOM_SPMI_ADC5_GEN3`/`QCOM_SPMI_ADC_TM5_GEN3`, now in `common/modules.config`.
-  - T14s: mark the EC reset GPIO as reserved (in linux-next).
+Checksummed patches kept in this recipe are pending upstream fixes from
+linux-arm-msm (October 2026):
 
-The v7 x1e camera DTSI series is not applied: it moves CSIPHYs to the separate
-`qcom,x1e80100-csi2-phy` driver that is still under review, while Jens's tree
-already wires the T14s ov02c10 through the existing CAMSS layout.
+- `dispcc-x1e80100`: keep `disp_cc_pll0` out of the unused-clock sweep
+  (marginal PLL relock causing black eDP bands / boot display problems).
+- `qcom_battmgr`: report `capacity` on X1E80100 (in linux-next).
+- `qcom_battmgr`: report `Full` for a full battery on external power instead
+  of `Not charging`.
+- `qcom_battmgr`: announce AC/USB online changes so UPower notices charger
+  plug/unplug; context-adjusted to apply after the previous patch.
+- T14s PMIC thermal zones (Daniel Lezcano v3): keyboard passive trip at the
+  EC alert temperature (57.85°C) and 73°C critical trips. These require
+  `QCOM_SPMI_ADC5_GEN3`/`QCOM_SPMI_ADC_TM5_GEN3`, enabled in `common/modules.config`.
+- T14s: mark the EC reset GPIO as reserved (in linux-next).
 
-Build integration fixes also align the remoteproc deletion guard with the
-existing `deleting` flag, consolidate duplicate Hamoa ADC nodes and channel APIs,
-restore missing camera controller/PHY/pinctrl nodes from Jens 7.2.5,
-resolve conflict markers in the Q6v5 stop path, and correct PAS context
-release calls.
 Only the four packaged T14s device trees are built, avoiding missing source
 files for unrelated boards; the full Ubuntu module selection is retained.
 

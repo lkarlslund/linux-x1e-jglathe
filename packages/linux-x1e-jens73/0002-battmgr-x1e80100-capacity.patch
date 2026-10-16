@@ -1,4 +1,4 @@
-From 71cee121616b745470d01c14f64e367486fa1f7d Mon Sep 17 00:00:00 2001
+From f205528cd69164cf4264e76dc3c55b2b7979d69c Mon Sep 17 00:00:00 2001
 From: Liviu Nicoara <lnicoara@thinkoid.org>
 Date: Sun, 20 Sep 2026 15:34:02 -0400
 Subject: [PATCH] power: supply: qcom_battmgr: Report capacity on X1E80100
@@ -26,10 +26,10 @@ Reviewed-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/power/supply/qcom_battmgr.c b/drivers/power/supply/qcom_battmgr.c
-index ebfc40a83158..4516a5876cfa 100644
+index 7716eb9e1aff..a7237ba09be1 100644
 --- a/drivers/power/supply/qcom_battmgr.c
 +++ b/drivers/power/supply/qcom_battmgr.c
-@@ -834,6 +834,7 @@ static const enum power_supply_property x1e80100_bat_props[] = {
+@@ -830,6 +830,7 @@ static const enum power_supply_property x1e80100_bat_props[] = {
  	POWER_SUPPLY_PROP_STATUS,
  	POWER_SUPPLY_PROP_PRESENT,
  	POWER_SUPPLY_PROP_TECHNOLOGY,
