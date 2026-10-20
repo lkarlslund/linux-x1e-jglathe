@@ -1,0 +1,32 @@
+From: justririll (x1e-sleep)
+Subject: [PATCH] mfd: syscon: don't take the clock of a clock provider
+
+Imported unchanged from https://github.com/justririll/x1e-sleep
+(kernel/sleep/syscon-skip-clock-of-clock-providers.patch).
+
+The clocks of a clock provider syscon (the X1E TCSR block) are its parent
+clocks. Keeping one prepared pins an RPMh XO vote and stops the SoC from
+turning the crystal off in suspend.
+---
+diff --git a/drivers/mfd/syscon.c b/drivers/mfd/syscon.c
+index 21a7fcdd2737..ee9ceca17aed 100644
+--- a/drivers/mfd/syscon.c
++++ b/drivers/mfd/syscon.c
+@@ -123,7 +123,16 @@ static struct syscon *of_syscon_register(struct device_node *np, bool check_res)
+ 	}
+ 
+ 	if (check_res) {
+-		clk = of_clk_get(np, 0);
++		/*
++		 * The "clocks" of a clock provider (e.g. the X1E TCSR block) are
++		 * its parent clocks, not a register clock. Attaching one keeps it
++		 * prepared forever, which pins an RPMh XO vote and blocks the SoC
++		 * from turning the crystal off in suspend.
++		 */
++		if (of_property_present(np, "#clock-cells"))
++			clk = ERR_PTR(-ENOENT);
++		else
++			clk = of_clk_get(np, 0);
+ 		if (IS_ERR(clk)) {
+ 			ret = PTR_ERR(clk);
+ 			/* clock is optional */

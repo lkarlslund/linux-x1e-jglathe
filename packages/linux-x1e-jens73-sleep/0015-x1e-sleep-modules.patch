@@ -1,0 +1,225 @@
+From: Lars Karlslund <lars@karlslund.dk>
+Subject: [PATCH] soc: qcom: add X1E EL2 sleep helper modules
+
+Import el1tmr and aoss_cxsd_only from https://github.com/justririll/x1e-sleep (modules/) as
+in-tree modules so they are built with this kernel:
+
+- x1e_el1tmr: at EL2 (no Gunyah) copy the next tick deadline into
+  CNTP_CVAL_EL02 before CPU power-down; the firmware derives the APSS
+  wake time from the EL1 timers and otherwise returns from system-level
+  sleep at once. Disable the stale CNTV that UEFI leaves armed.
+- x1e_aoss_cxsd_only: tell the AOSS not to enter AOSD, keeping CX
+  collapse and DDR self-refresh; avoids hourly resets in AOSD.
+
+aoss_cxsd_only now uses the qcom_aoss.h prototype for qmp_send().
+---
+diff --git a/drivers/soc/qcom/Kconfig b/drivers/soc/qcom/Kconfig
+index 2b524154d9fb..c227c0181b4b 100644
+--- a/drivers/soc/qcom/Kconfig
++++ b/drivers/soc/qcom/Kconfig
+@@ -27,6 +27,25 @@ config QCOM_AOSS_QMP
+ 	  subsystems as well as controlling the debug clocks exposed by the Always On
+ 	  Subsystem (AOSS) using Qualcomm Messaging Protocol (QMP).
+ 
++config QCOM_X1E_EL1TMR
++	tristate "X1E: EL1 timer deadline for firmware sleep at EL2"
++	depends on ARM64 && ARCH_QCOM && CPU_PM
++	default m
++	help
++	  When Linux runs at EL2 without a hypervisor, copy the next timer
++	  deadline into the EL1 physical timer before CPU power-down, where
++	  the X1E secure firmware looks for the APSS wake-up time. Without it
++	  the firmware returns from system-level sleep requests at once.
++	  Do not keep it loaded while KVM guests run.
++
++config QCOM_X1E_AOSS_CXSD_ONLY
++	tristate "X1E: limit system sleep to CX collapse (no AOSD)"
++	depends on QCOM_AOSS_QMP
++	default m
++	help
++	  Ask the AOSS not to enter AOSD (XO shutdown) while still allowing CX
++	  collapse and DDR self-refresh. Works around hourly resets in AOSD
++	  seen on X1E laptops at EL2.
+ config QCOM_COMMAND_DB
+ 	tristate "Qualcomm Command DB"
+ 	depends on OF_RESERVED_MEM
+diff --git a/drivers/soc/qcom/Makefile b/drivers/soc/qcom/Makefile
+index 798643be3590..3240a1cc3667 100644
+--- a/drivers/soc/qcom/Makefile
++++ b/drivers/soc/qcom/Makefile
+@@ -2,6 +2,8 @@
+ CFLAGS_rpmh-rsc.o := -I$(src)
+ CFLAGS_qcom_aoss.o := -I$(src)
+ obj-$(CONFIG_QCOM_AOSS_QMP) +=	qcom_aoss.o
++obj-$(CONFIG_QCOM_X1E_AOSS_CXSD_ONLY) += x1e_aoss_cxsd_only.o
++obj-$(CONFIG_QCOM_X1E_EL1TMR) += x1e_el1tmr.o
+ obj-$(CONFIG_QCOM_GENI_SE) +=	qcom-geni-se.o
+ obj-$(CONFIG_QCOM_COMMAND_DB) += cmd-db.o
+ obj-$(CONFIG_QCOM_GSBI)	+=	qcom_gsbi.o
+diff --git a/drivers/soc/qcom/x1e_aoss_cxsd_only.c b/drivers/soc/qcom/x1e_aoss_cxsd_only.c
+new file mode 100644
+index 000000000000..bf1c21150f1c
+--- /dev/null
++++ b/drivers/soc/qcom/x1e_aoss_cxsd_only.c
+@@ -0,0 +1,65 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Imported from https://github.com/justririll/x1e-sleep (modules/aoss-cxsd-only).
++ *
++ * Workaround: keep the SoC out of AOSD (XO shutdown) and allow only CX
++ * collapse. On the Vivobook S15 (EL2, no Gunyah) the SoC resets about once
++ * an hour while in AOSD; with AOSD disabled it sleeps through at ~0.17 W.
++ *
++ * Sends "{class: aoss_slp, res: sleep, val: disable}" to the AOSS over the
++ * existing QMP transport at load and re-enables AOSD on unload.
++ */
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_platform.h>
++#include <linux/platform_device.h>
++#include <linux/soc/qcom/qcom_aoss.h>
++
++static struct platform_device *aoss_pdev;
++
++static struct qmp *aoss_qmp(void)
++{
++	return aoss_pdev ? platform_get_drvdata(aoss_pdev) : NULL;
++}
++
++static int __init aoss_cxsd_only_init(void)
++{
++	struct device_node *np;
++	struct qmp *qmp;
++	int ret;
++
++	np = of_find_compatible_node(NULL, NULL, "qcom,aoss-qmp");
++	if (!np)
++		return -ENODEV;
++	aoss_pdev = of_find_device_by_node(np);
++	of_node_put(np);
++	if (!aoss_pdev)
++		return -ENODEV;
++
++	qmp = aoss_qmp();
++	if (!qmp) {
++		put_device(&aoss_pdev->dev);
++		return -EPROBE_DEFER;
++	}
++
++	ret = qmp_send(qmp, "{class: aoss_slp, res: sleep, val: disable}");
++	if (ret) {
++		put_device(&aoss_pdev->dev);
++		return ret;
++	}
++	pr_info("aoss_cxsd_only: AOSD disabled, system sleep stops at CXSD\n");
++	return 0;
++}
++
++static void __exit aoss_cxsd_only_exit(void)
++{
++	qmp_send(aoss_qmp(), "{class: aoss_slp, res: sleep, val: enable}");
++	pr_info("aoss_cxsd_only: AOSD enabled again\n");
++	put_device(&aoss_pdev->dev);
++}
++
++module_init(aoss_cxsd_only_init);
++module_exit(aoss_cxsd_only_exit);
++MODULE_SOFTDEP("pre: qcom_aoss");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Disable AOSD (XO shutdown) via AOSS QMP; CX collapse only");
+diff --git a/drivers/soc/qcom/x1e_el1tmr.c b/drivers/soc/qcom/x1e_el1tmr.c
+new file mode 100644
+index 000000000000..71586dd2198e
+--- /dev/null
++++ b/drivers/soc/qcom/x1e_el1tmr.c
+@@ -0,0 +1,90 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Imported from https://github.com/justririll/x1e-sleep (modules/el1tmr).
++ *
++ * Linux at EL2 (VHE) runs its tick on the EL2 physical timer (CNTHP), but the
++ * secure firmware derives the APSS wake deadline for cluster/system power
++ * collapse from the EL1 timers (CNTP/CNTV), which Windows and EL1 Linux use.
++ *
++ * - Before a CPU enters a power-down idle state (CPU_PM_ENTER), copy its CNTHP
++ *   deadline into CNTP_*_EL02 with the interrupt masked, so the firmware
++ *   programs the wake-up for the real next timer event; on exit park it far
++ *   away again.
++ * - Disable the EL1 virtual timer left armed (and long expired) by UEFI on the
++ *   boot CPU; it made the firmware abort every system-level entry at once.
++ *
++ * Do not load while KVM guests run (KVM owns the EL1 timers then).
++ */
++#include <linux/module.h>
++#include <linux/smp.h>
++#include <linux/cpu.h>
++#include <linux/cpu_pm.h>
++#include <asm/sysreg.h>
++#include <asm/arch_timer.h>
++
++#define FAR_TICKS	(1ULL << 44)	/* ~10 days at 19.2 MHz */
++#define CTL_EN		ARCH_TIMER_CTRL_ENABLE
++#define CTL_MASK	ARCH_TIMER_CTRL_IT_MASK
++
++static void park(void)
++{
++	write_sysreg_s(__arch_counter_get_cntpct() + FAR_TICKS, SYS_CNTP_CVAL_EL02);
++	write_sysreg_s(CTL_EN | CTL_MASK, SYS_CNTP_CTL_EL02);
++	isb();
++}
++
++static int el1tmr_cpu_pm(struct notifier_block *nb, unsigned long action, void *v)
++{
++	u64 ctl;
++
++	switch (action) {
++	case CPU_PM_ENTER:
++		ctl = read_sysreg(cntp_ctl_el0);	/* CNTHP_CTL_EL2 under VHE */
++		if ((ctl & CTL_EN) && !(ctl & CTL_MASK))
++			write_sysreg_s(read_sysreg(cntp_cval_el0), SYS_CNTP_CVAL_EL02);
++		else
++			write_sysreg_s(__arch_counter_get_cntpct() + FAR_TICKS,
++				       SYS_CNTP_CVAL_EL02);
++		write_sysreg_s(CTL_EN | CTL_MASK, SYS_CNTP_CTL_EL02);
++		isb();
++		break;
++	case CPU_PM_ENTER_FAILED:
++	case CPU_PM_EXIT:
++		park();
++		break;
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block el1tmr_cpu_pm_nb = { .notifier_call = el1tmr_cpu_pm };
++
++static void init_one(void *unused)
++{
++	park();
++	write_sysreg_s(0, SYS_CNTV_CTL_EL02);
++	isb();
++}
++
++static void exit_one(void *unused)
++{
++	write_sysreg_s(0, SYS_CNTP_CTL_EL02);
++	isb();
++}
++
++static int __init el1tmr_init(void)
++{
++	if (!is_kernel_in_hyp_mode())
++		return -ENODEV;
++	on_each_cpu(init_one, NULL, 1);
++	return cpu_pm_register_notifier(&el1tmr_cpu_pm_nb);
++}
++
++static void __exit el1tmr_exit(void)
++{
++	cpu_pm_unregister_notifier(&el1tmr_cpu_pm_nb);
++	on_each_cpu(exit_one, NULL, 1);
++}
++module_init(el1tmr_init);
++module_exit(el1tmr_exit);
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("X1E: mirror the EL2 tick deadline into the EL1 timer for firmware sleep");

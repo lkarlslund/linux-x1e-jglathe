@@ -1,0 +1,47 @@
+From: justririll (x1e-sleep)
+Subject: [PATCH] arm64: dts: qcom: hamoa: add SS1, make DRIPS system-sleep-only
+
+Imported from https://github.com/justririll/x1e-sleep
+(kernel/sleep/dts-hamoa-add-ss1-idle-state.patch), rebased onto 7.3.
+
+ACPI _LPI of \_SB.SYSM lists platform.SS1 (0x100), SS2 and DRIPS (0xc300).
+Add SS1 as the runtime system idle state and keep DRIPS (domain_ss3) for
+system sleep only.
+---
+diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+index 20f772235d76..bc94e9b912ef 100644
+--- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
++++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+@@ -305,12 +305,23 @@ cluster_cl5: cluster-sleep-1 {
+ 				min-residency-us = <7000>;
+ 			};
+ 
++			/* ACPI \_SB.SYSM _LPI "platform.SS1": 7.5 ms residency, 0.5 ms latency */
++			domain_ss1: domain-sleep-1 {
++				compatible = "domain-idle-state";
++				arm,psci-suspend-param = <0x02000154>;
++				entry-latency-us = <250>;
++				exit-latency-us = <250>;
++				min-residency-us = <7500>;
++			};
++
+ 			domain_ss3: domain-sleep-0 {
+ 				compatible = "domain-idle-state";
+ 				arm,psci-suspend-param = <0x0200c354>;
+ 				entry-latency-us = <2500>;
+ 				exit-latency-us = <2500>;
+ 				min-residency-us = <9000>;
++				/* DRIPS from runtime idle hangs the SoC after the first s2idle */
++				system-sleep-only;
+ 			};
+ 		};
+ 	};
+@@ -470,7 +481,7 @@ cluster_pd2: power-domain-cpu-cluster2 {
+ 
+ 		system_pd: power-domain-system {
+ 			#power-domain-cells = <0>;
+-			domain-idle-states = <&domain_ss3>;
++			domain-idle-states = <&domain_ss1>, <&domain_ss3>;
+ 		};
+ 	};
+ 
