@@ -185,6 +185,12 @@ The local makepkg configuration controls `SRCDEST`, `PKGDEST`, and parallelism.
 On this machine packages are written to `/home/lak/.cache/makepkg/pkg` and Git
 sources are shared through `/home/lak/.cache/makepkg/src`.
 
+Local builds keep each package's `src/` tree: `prepare()` resets it to the
+pinned commit (`git reset --hard`, `git clean -fd`) before applying the
+patches, while ignored build outputs stay, so a patch or pkgrel change only
+rebuilds what it touches. Set `KERNEL_CLEANBUILD=1` for a from-scratch build;
+CI always builds from scratch.
+
 ## Ubuntu ARM64 feature baseline
 
 Both variants start from the checked-in `common/ubuntu-arm64.config`, a

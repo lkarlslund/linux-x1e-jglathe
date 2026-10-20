@@ -1,6 +1,6 @@
 pkgbase=linux-x1e-jens73-sleep
 pkgver=7.3.0
-pkgrel=2
+pkgrel=3
 
 _variant_desc='Jens 7.3 with EL2 DRIPS sleep test patches'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
@@ -31,6 +31,10 @@ _kernel_patches=(
   # Surface Pro 11 / Yoga Slim 7x findings (sp11-el2, aruhier)
   '0016-arch-timer-park-stopped-timers.patch'
   '0017-icc-bwmon-suspend.patch'
+  # DRIPS is composed on CL5: restore it for system sleep with the DC ZVA erratum
+  '0018-oryon-dc-zva-erratum.patch'
+  '0019-hamoa-cl5-system-sleep-only.patch'
+  '0020-cpuidle-psci-log-s2idle-failures.patch'
 )
 
 source "${startdir}/../../common/kernel-package.inc"
@@ -54,6 +58,9 @@ sha256sums+=(
   '7b7b7e9259541f9f34c1171b31c4e3d8948c93d231de09134e073a94252cdcbd'
   'ef6702a01dd278bfa770690b1f9391109cbd025f3fee71127f4dbd767ffde7b8'
   '5032039fdda4733ac194b7c1adf21bb8c70dd8c1269c22da5c783cf36d9a5c44'
+  '314621e6548a7f4881e3d1636d2d8fbbba682be0eb65634b6dba8283934b38f8'
+  'cc5f94b76cde1155182b41cf7e47bc681ab7141727a5255b916896bf506a38b9'
+  '7fcbfcb30c8f735c110761aa0534b29907380231d775e18e51aa50e0a5c871ff'
   'ef1b5e2d098e0369708554f92872ee39a4a7b378fbab2721d65c34895461b6fe'
 )
 

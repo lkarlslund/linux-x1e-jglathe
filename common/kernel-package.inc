@@ -61,6 +61,13 @@ export LOCALVERSION=
 prepare() {
   cd "${_srcname}"
 
+  # The source tree is reused between builds (no --cleanbuild/--clean):
+  # restore the pinned commit and drop files added by the previous run's
+  # patches. Ignored build outputs stay, so kbuild rebuilds only what the
+  # patches and config touch.
+  git reset --hard --quiet
+  git clean -fd --quiet
+
   local kernel_patch
   for kernel_patch in "${_kernel_patches[@]}"; do
     patch -Np1 --forward --fuzz=0 < "${srcdir}/${kernel_patch}"

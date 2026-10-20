@@ -5,11 +5,13 @@ repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 all_variants=(
   linux-x1e-jens725-pdc
   linux-x1e-jens73
+  linux-x1e-jens73-sleep
 )
 
 usage() {
   echo "Usage: $0 all|VARIANT [VARIANT ...]" >&2
   echo "Variants: ${all_variants[*]}" >&2
+  echo "Source trees are reused between builds; set KERNEL_CLEANBUILD=1 to start from scratch." >&2
 }
 
 if (( $# == 0 )); then
@@ -36,6 +38,10 @@ for variant in "${variants[@]}"; do
   echo "==> Building ${variant}"
   (
     cd "${package_dir}"
-    makepkg --syncdeps --cleanbuild --clean
+    # Reusing src/ avoids a full checkout and lets kbuild rebuild
+    # incrementally; prepare() resets the tree to the pinned commit.
+    clean_args=()
+    [[ ${KERNEL_CLEANBUILD:-0} == 1 ]] && clean_args=(--cleanbuild --clean)
+    makepkg --syncdeps "${clean_args[@]}"
   )
 done
