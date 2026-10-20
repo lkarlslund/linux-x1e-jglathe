@@ -1,0 +1,23 @@
+From: justririll (x1e-sleep)
+Subject: [PATCH] arm64: dts: qcom: hamoa: make DRIPS system-sleep-only
+
+From https://github.com/justririll/x1e-sleep (kernel/sleep/dts-hamoa-add-ss1-idle-state.patch), without
+the SS1 runtime state: on X1E at EL2, SS1 (0x02000154) in power-domain-system
+hangs the SoC once the ADSP is attached (Surface Pro 11 findings,
+https://github.com/ramonjesusmiranda-debug/sp11-el2), and on this T14s it was rejected at every runtime attempt.
+Keep DRIPS (domain_ss3) for system sleep only; from runtime idle it hangs
+the SoC after the first s2idle.
+---
+diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+index 20f772235d76..6a4c704f58dd 100644
+--- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
++++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+@@ -311,6 +311,8 @@ domain_ss3: domain-sleep-0 {
+ 				entry-latency-us = <2500>;
+ 				exit-latency-us = <2500>;
+ 				min-residency-us = <9000>;
++				/* DRIPS from runtime idle hangs the SoC after the first s2idle */
++				system-sleep-only;
+ 			};
+ 		};
+ 	};
