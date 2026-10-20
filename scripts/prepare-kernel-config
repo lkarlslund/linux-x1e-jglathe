@@ -39,7 +39,8 @@ def run(*args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("ubuntu", type=Path)
+    parser.add_argument("ubuntu", type=Path,
+                        help="Ubuntu baseline config, or \"none\"")
     parser.add_argument("t14s", type=Path)
     parser.add_argument("modules", type=Path)
     args = parser.parse_args()
@@ -58,26 +59,29 @@ def main():
     if hardware.get("CONFIG_I3C_OR_I2C") == "y":
         retained["CONFIG_I3C"] = "y"
     write_config(Path(".t14s-preserve.config"), retained)
-    ubuntu = config(args.ubuntu)
-    # Ubuntu carries modular Binder patches absent in some mainline revisions.
-    # Convert old module requests to built-ins when the source now uses bool.
-    symbol_types = {}
-    for path in Path(".").rglob("Kconfig*"):
-        if not path.is_file():
-            continue
-        text = path.read_text(errors="replace")
-        blocks = re.split(r"^\s*(?:menu)?config\s+(\w+)\s*$", text, flags=re.M)
-        for name, block in zip(blocks[1::2], blocks[2::2]):
-            kind = re.search(r"^\s*(?:def_)?(bool|tristate)(?:\s|$)", block, re.M)
-            if kind:
-                symbol_types.setdefault("CONFIG_" + name, set()).add(kind[1])
-    for key, value in ubuntu.items():
-        if value == "m" and symbol_types.get(key) == {"bool"}:
-            ubuntu[key] = "y"
-    # New shared dependency of the existing SENSORS_SBTSI driver in Linux 7.3.
-    if "CONFIG_AMD_SBTSI" in symbol_types:
-        ubuntu["CONFIG_AMD_SBTSI"] = "m"
-    write_config(target, ubuntu)
+    # "none" skips the Ubuntu baseline: the resolved T14s hardware config plus
+    # the explicit laptop module fragment below is the whole module selection.
+    if str(args.ubuntu) != "none":
+        ubuntu = config(args.ubuntu)
+        # Ubuntu carries modular Binder patches absent in some mainline revisions.
+        # Convert old module requests to built-ins when the source now uses bool.
+        symbol_types = {}
+        for path in Path(".").rglob("Kconfig*"):
+            if not path.is_file():
+                continue
+            text = path.read_text(errors="replace")
+            blocks = re.split(r"^\s*(?:menu)?config\s+(\w+)\s*$", text, flags=re.M)
+            for name, block in zip(blocks[1::2], blocks[2::2]):
+                kind = re.search(r"^\s*(?:def_)?(bool|tristate)(?:\s|$)", block, re.M)
+                if kind:
+                    symbol_types.setdefault("CONFIG_" + name, set()).add(kind[1])
+        for key, value in ubuntu.items():
+            if value == "m" and symbol_types.get(key) == {"bool"}:
+                ubuntu[key] = "y"
+        # New shared dependency of the existing SENSORS_SBTSI driver in Linux 7.3.
+        if "CONFIG_AMD_SBTSI" in symbol_types:
+            ubuntu["CONFIG_AMD_SBTSI"] = "m"
+        write_config(target, ubuntu)
     # The upstream Qualcomm fragment intentionally removes general-purpose GPU
     # and SoC support. Retain its positive hardware fixes, not those reductions.
     if qcom.exists():

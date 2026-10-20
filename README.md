@@ -10,7 +10,7 @@ replace the boot files or device trees of another variant.
 | Package | Base | Purpose |
 | --- | --- | --- |
 | `linux-x1e-jens725-pdc` | Jens `7.2.5-jg-0` | Stable daily-use kernel with the rc6 PDC/SS3 v4 series and diagnostics |
-| `linux-x1e-jens73` | Jens `7.3-rc7-jg-0` | The single 7.3 variant; Jens's Snapdragon laptop integration with the shared Ubuntu module baseline |
+| `linux-x1e-jens73` | Jens `7.3-rc7-jg-0` + Linux 7.3 | The single 7.3 variant; Jens's Snapdragon laptop integration with the shared Ubuntu module baseline |
 
 All source revisions are immutable 40-character Git commit IDs in their
 respective `PKGBUILD`. Updating a branch on GitHub does not silently alter a
@@ -33,10 +33,13 @@ especially on firmware that leaves the PDC in secondary-controller mode.
 
 `linux-x1e-jens73` pins Jens's 7.3-rc7 commit
 `b1482e1e1590306027ebf5ebd6d7df1ceab84ec5` (`jg/ubuntu-qcom-x1e-7.3rc`,
-7.3-rc7-jg-0). It replaces and conflicts with
+7.3-rc7-jg-0) and brings it to mainline v7.3 with the
+`v7.3-rc7..v7.3` diff (`0000-linux-7.3-rc7-to-7.3.patch`; Jens has no 7.3
+branch yet). It replaces and conflicts with
 `linux-x1e-t14s-edge`; matching headers replace the old edge headers too.
 Installing it replaces the old 7.3 package and its loader entry with
-`linux-x1e-jens73.conf`, titled **Arch Linux — Jens 7.3-rc7**.
+`linux-x1e-jens73.conf`, titled **Arch Linux — Jens 7.3**. The package version is `7.3.0` so it
+sorts above `7.3.rc7`.
 Publishing this variant also retires old edge release assets.
 
 The machine-local ASPM-v3 diagnostic loader entry pointed to the same old
@@ -64,6 +67,18 @@ linux-arm-msm (October 2026):
   EC alert temperature (57.85°C) and 73°C critical trips. These require
   `QCOM_SPMI_ADC5_GEN3`/`QCOM_SPMI_ADC_TM5_GEN3`, enabled in `common/modules.config`.
 - T14s: mark the EC reset GPIO as reserved (in linux-next).
+- Clock `sync_state` support (Brian Masney v3, `20260626-clk-sync-state-v1-0-4156d8196dc8@redhat.com`,
+  Tested-by Jens on X1): device-owned clocks are swept only after their
+  consumers probe. Jens's 7.2.5 tree carries an earlier version; his 7.3 tree
+  does not, and without it rc7 hangs at boot with a black screen unless
+  `clk_ignore_unused` is passed. Not in v7.3; patch 1 is disputed upstream.
+
+`_module_baseline=none` builds the T14s hardware configuration plus
+`common/modules.config` only, without Ubuntu's generic ARM64 module set
+(about 585 modules instead of 7,800; the 7.2.5 package keeps the Ubuntu
+baseline). `modules.config` lists laptop peripherals explicitly: USB
+Wi-Fi/Bluetooth/serial dongles, card readers, DisplayLink, input devices,
+container networking and VFIO.
 
 Only the four packaged T14s device trees are built, avoiding missing source
 files for unrelated boards; the full Ubuntu module selection is retained.

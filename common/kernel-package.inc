@@ -42,8 +42,8 @@ sha256sums=(
   'f2e8613c4b593ecb6b9645d5a170dbb43af9075a21b16786ceef1ba788db4fb2'
   'c24a2ef369c342a46ada88aa5baf3cbea4457413a1f9c22084008a5c3c690d86'
   '5db84b92995b662039851752d5a9895f84d47a72faccc7e06ee95136c5fe995b'
-  'b5fae3c3f6b6c7a2559937f32345751d7c2c7df305ee90f2942d1467d87c4256'
-  '642c96694829ee8df245a8a4deacbe22ffd278b39041197fffd813d52142e837'
+  '843d5a29520ff07496005191846613d61dfe29678cc3aa43b24ff28f9688e8b9'
+  '42777fd9f9f6783f1fc3493e72b66ba3df80ac5a3125deb4cb51c8095bf4a77b'
   '1bb2fd3f0693141584c484793fda6bbc42bc730e0507b43989d75d5f3cd1ab74'
   '01d1b6e61aee68ff3f27909cbed6b5458dade4e8807e229e04265f79777cc4ca'
   '452b8d4d71e1565ca91b1bebb280693549222ef51c47ba8964e411b2d461699c'
@@ -69,11 +69,19 @@ prepare() {
   echo "-${pkgrel}" > localversion.10-pkgrel
   echo "${pkgbase#linux}" > localversion.20-pkgname
 
-  python "${srcdir}/prepare-kernel-config" "${srcdir}/ubuntu-arm64.config" \
-    "${srcdir}/running.config" "${srcdir}/modules.config"
-  python "${srcdir}/verify-kernel-config" "${srcdir}/modules.config" .config \
-    --ubuntu "${srcdir}/ubuntu-arm64.config" \
-    --exceptions "${srcdir}/ubuntu-module-exceptions"
+  # _module_baseline=none builds only the T14s hardware config plus
+  # modules.config; the default keeps Ubuntu's generic ARM64 module set.
+  if [[ ${_module_baseline:-ubuntu} == none ]]; then
+    python "${srcdir}/prepare-kernel-config" none \
+      "${srcdir}/running.config" "${srcdir}/modules.config"
+    python "${srcdir}/verify-kernel-config" "${srcdir}/modules.config" .config
+  else
+    python "${srcdir}/prepare-kernel-config" "${srcdir}/ubuntu-arm64.config" \
+      "${srcdir}/running.config" "${srcdir}/modules.config"
+    python "${srcdir}/verify-kernel-config" "${srcdir}/modules.config" .config \
+      --ubuntu "${srcdir}/ubuntu-arm64.config" \
+      --exceptions "${srcdir}/ubuntu-module-exceptions"
+  fi
   make -s kernelrelease > version
   echo "Prepared ${pkgbase} $(<version) from ${_commit}"
 }

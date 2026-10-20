@@ -1,32 +1,43 @@
 pkgbase=linux-x1e-jens73
-pkgver=7.3.rc7
+pkgver=7.3.0
 pkgrel=1
 
-_variant_desc='Jens 7.3-rc7 Snapdragon laptop integration'
+_variant_desc='Jens 7.3-rc7 + Linux 7.3 Snapdragon laptop integration'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
 _commit='b1482e1e1590306027ebf5ebd6d7df1ceab84ec5'
-_boot_title='Arch Linux — Jens 7.3-rc7'
+_boot_title='Arch Linux — Jens 7.3'
 _sort_key='40-x1e-jens73'
+_module_baseline=none
 _kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=0'
 
 _kernel_patches=(
+  '0000-linux-7.3-rc7-to-7.3.patch'
   '0001-dispcc-x1e80100-keep-pll0.patch'
   '0002-battmgr-x1e80100-capacity.patch'
   '0003-battmgr-report-full.patch'
   '0004-battmgr-notify-charger-online.patch'
   '0005-t14s-pmic-thermal-zones.patch'
   '0006-t14s-ec-reset-reserved.patch'
+  '0007-driver-core-add-sync-state.patch'
+  '0008-pmdomain-add-sync-state.patch'
+  '0009-driver-core-remove-set-drv-sync-state.patch'
+  '0010-clk-sync-state.patch'
 )
 
 source "${startdir}/../../common/kernel-package.inc"
 source+=("${_kernel_patches[@]}")
 sha256sums+=(
+  '1a756c1c54c3908d5ec686395c0bf2fae8c616a024480a7f672ee6434d269760'
   '2efa76aad27f3be69f5e18d4a3c2dc3f74e7a27bde3557ed6227a2b6295acbb0'
   '34aeb97b2df848e64661d3f26978bd055df77e517795866f78d547a529143330'
   '05755195355377e3c877e3e269db5bd566184a28c5f7e956811cc3d4dc1d3718'
   '51fac128d971b67f1f635c7e75c8054503aeb0cd69821ce17463039c8bb93b46'
   'aed805933247fb96e4aac492575f6dce75043c8a02588d34219ad73cb0de535a'
   'f05e213771e854d40c8fa201f032833a4f00d7b3da6d765aac389965a9ac994a'
+  '64de169012b3295fe3cdb05b9cecf0fd83e1e59639725e6d156a853c157056bd'
+  'd9f5657302eba48e2e8ccb60098853c5ab8e238967fb2f9dc70a351b406a48f8'
+  '2c9acd524886b103f2a5d8a513cd012be0d61a7731d81dd4ad4d88dec9ed21c8'
+  '57229e11433fe8b980bb0e7608c39f5e8052bf8dcfca26e3bf83eaf5f2e2babf'
 )
 
 # Rename the existing 7.3 package without leaving two installed variants.
