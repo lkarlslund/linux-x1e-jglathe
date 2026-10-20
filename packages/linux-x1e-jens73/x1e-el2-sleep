@@ -1,5 +1,5 @@
 #!/bin/sh
-# systemd-sleep hook for the linux-x1e-jens73-sleep test kernel.
+# systemd-sleep hook for the linux-x1e-jens73 kernel.
 #
 # DRIPS is reached through s2idle (the system power domain's CPU_SUSPEND),
 # not PSCI SYSTEM_SUSPEND, so switch the mode after systemd has written its
@@ -9,7 +9,7 @@
 # alone.
 
 case "$(uname -r)" in
-	*-x1e-jens73-sleep-*) ;;
+	*-x1e-jens73-ARCH) ;;
 	*) exit 0 ;;
 esac
 

@@ -1,56 +1,70 @@
 pkgbase=linux-x1e-jens73
 pkgver=7.3.0
-pkgrel=1
+pkgrel=2
 
-_variant_desc='Jens 7.3-rc7 + Linux 7.3 Snapdragon laptop integration'
+_variant_desc='Jens 7.3.0 Snapdragon laptop integration'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
-_commit='b1482e1e1590306027ebf5ebd6d7df1ceab84ec5'
+_commit='6456ab41f752a0ce8d97385e0685e2c6986d5eb0'
 _boot_title='Arch Linux — Jens 7.3'
 _sort_key='40-x1e-jens73'
 _module_baseline=none
 _kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=0'
 
 _kernel_patches=(
-  '0000-linux-7.3-rc7-to-7.3.patch'
   '0001-dispcc-x1e80100-keep-pll0.patch'
   '0002-battmgr-x1e80100-capacity.patch'
   '0003-battmgr-report-full.patch'
   '0004-battmgr-notify-charger-online.patch'
   '0005-t14s-pmic-thermal-zones.patch'
   '0006-t14s-ec-reset-reserved.patch'
-  '0007-driver-core-add-sync-state.patch'
-  '0008-pmdomain-add-sync-state.patch'
-  '0009-driver-core-remove-set-drv-sync-state.patch'
-  '0010-clk-sync-state.patch'
+  # X1E EL2 s2idle/DRIPS (justririll/x1e-sleep, sp11-el2, aruhier)
+  '0011-pmdomain-system-sleep-only.patch'
+  '0012-hamoa-drips-system-sleep-only.patch'
+  '0013-syscon-skip-clock-providers.patch'
+  '0014-t14s-disable-crypto.patch'
+  '0015-x1e-sleep-modules.patch'
+  '0016-arch-timer-park-stopped-timers.patch'
+  '0017-icc-bwmon-suspend.patch'
+  '0018-oryon-dc-zva-erratum.patch'
+  '0019-hamoa-cl5-system-sleep-only.patch'
+  '0020-cpuidle-psci-log-s2idle-failures.patch'
 )
 
 source "${startdir}/../../common/kernel-package.inc"
-source+=("${_kernel_patches[@]}")
+source+=("${_kernel_patches[@]}" x1e-el2-sleep)
 sha256sums+=(
-  '1a756c1c54c3908d5ec686395c0bf2fae8c616a024480a7f672ee6434d269760'
   '2efa76aad27f3be69f5e18d4a3c2dc3f74e7a27bde3557ed6227a2b6295acbb0'
   '34aeb97b2df848e64661d3f26978bd055df77e517795866f78d547a529143330'
   '05755195355377e3c877e3e269db5bd566184a28c5f7e956811cc3d4dc1d3718'
   '51fac128d971b67f1f635c7e75c8054503aeb0cd69821ce17463039c8bb93b46'
   'aed805933247fb96e4aac492575f6dce75043c8a02588d34219ad73cb0de535a'
   'f05e213771e854d40c8fa201f032833a4f00d7b3da6d765aac389965a9ac994a'
-  '64de169012b3295fe3cdb05b9cecf0fd83e1e59639725e6d156a853c157056bd'
-  'd9f5657302eba48e2e8ccb60098853c5ab8e238967fb2f9dc70a351b406a48f8'
-  '2c9acd524886b103f2a5d8a513cd012be0d61a7731d81dd4ad4d88dec9ed21c8'
-  '57229e11433fe8b980bb0e7608c39f5e8052bf8dcfca26e3bf83eaf5f2e2babf'
+  '6fbf95c71637c412798ea7649243e33bee8bf125dae96afdcdecee51d862a22d'
+  '08ca1f72122edec934f435d3678fe587838c43d6a6604a64a7a84bdbcccd8310'
+  '29c8b5e4b0e5e8930779c181031fe2389382193f5afad97ee52a9c9da5e85c0c'
+  'f8dead3a60d39a04d9b603a54c50daa582ee9dc773e196195b6c501e3238362b'
+  '7b7b7e9259541f9f34c1171b31c4e3d8948c93d231de09134e073a94252cdcbd'
+  'ef6702a01dd278bfa770690b1f9391109cbd025f3fee71127f4dbd767ffde7b8'
+  '5032039fdda4733ac194b7c1adf21bb8c70dd8c1269c22da5c783cf36d9a5c44'
+  '314621e6548a7f4881e3d1636d2d8fbbba682be0eb65634b6dba8283934b38f8'
+  'cc5f94b76cde1155182b41cf7e47bc681ab7141727a5255b916896bf506a38b9'
+  '7fcbfcb30c8f735c110761aa0534b29907380231d775e18e51aa50e0a5c871ff'
+  '1aaa67890b0b89d60ecbaedaa91551dcade50fd5b4c7bff735c18f2d515957a3'
 )
 
-# Rename the existing 7.3 package without leaving two installed variants.
+# Replaces the old 7.3 edge package and the merged-in sleep test variant.
 package_linux-x1e-jens73() {
   _package
-  replaces=(linux-x1e-t14s-edge)
-  conflicts=(linux-x1e-t14s-edge)
+  install -Dm755 "${srcdir}/x1e-el2-sleep" \
+    "${pkgdir}/usr/lib/systemd/system-sleep/x1e-el2-sleep"
+  replaces=(linux-x1e-t14s-edge linux-x1e-jens73-sleep)
+  conflicts=(linux-x1e-t14s-edge linux-x1e-jens73-sleep)
 }
 
 package_linux-x1e-jens73-headers() {
   _package-headers
-  replaces=(linux-x1e-t14s-edge-headers)
-  conflicts=(linux-x1e-t14s-edge-headers)
+  replaces=(linux-x1e-t14s-edge-headers linux-x1e-jens73-sleep-headers)
+  conflicts=(linux-x1e-t14s-edge-headers linux-x1e-jens73-sleep-headers)
 }
 
 # This package installs only T14s DTBs. Other boards in this integration tree

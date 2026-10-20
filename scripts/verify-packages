@@ -5,7 +5,6 @@ repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 variants=(
   linux-x1e-jens725-pdc
   linux-x1e-jens73
-  linux-x1e-jens73-sleep
 )
 declare -A seen_boot_paths=()
 declare -A seen_dtb_paths=()

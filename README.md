@@ -10,7 +10,7 @@ replace the boot files or device trees of another variant.
 | Package | Base | Purpose |
 | --- | --- | --- |
 | `linux-x1e-jens725-pdc` | Jens `7.2.5-jg-0` | Stable daily-use kernel with the rc6 PDC/SS3 v4 series and diagnostics |
-| `linux-x1e-jens73` | Jens `7.3-rc7-jg-0` + Linux 7.3 | The single 7.3 variant; Jens's Snapdragon laptop integration with the shared Ubuntu module baseline |
+| `linux-x1e-jens73` | Jens `7.3.0-jg-0` | The single 7.3 variant: Jens's Snapdragon laptop integration, trimmed laptop module set, X1E EL2 s2idle/DRIPS work |
 
 All source revisions are immutable 40-character Git commit IDs in their
 respective `PKGBUILD`. Updating a branch on GitHub does not silently alter a
@@ -31,63 +31,62 @@ especially on firmware that leaves the PDC in secondary-controller mode.
 
 ## Jens 7.3 variant
 
-`linux-x1e-jens73` pins Jens's 7.3-rc7 commit
-`b1482e1e1590306027ebf5ebd6d7df1ceab84ec5` (`jg/ubuntu-qcom-x1e-7.3rc`,
-7.3-rc7-jg-0) and brings it to mainline v7.3 with the
-`v7.3-rc7..v7.3` diff (`0000-linux-7.3-rc7-to-7.3.patch`; Jens has no 7.3
-branch yet). It replaces and conflicts with
-`linux-x1e-t14s-edge`; matching headers replace the old edge headers too.
-Installing it replaces the old 7.3 package and its loader entry with
-`linux-x1e-jens73.conf`, titled **Arch Linux — Jens 7.3**. The package version is `7.3.0` so it
-sorts above `7.3.rc7`.
+`linux-x1e-jens73` pins Jens's `7.3.0-jg-0` tag
+(`6456ab41f752a0ce8d97385e0685e2c6986d5eb0`, branch `jg/ubuntu-qcom-x1e-7.3.y`).
+It replaces and conflicts with `linux-x1e-t14s-edge` and the short-lived
+`linux-x1e-jens73-sleep` test variant (matching headers likewise). Its loader
+entry is `linux-x1e-jens73.conf`, titled **Arch Linux — Jens 7.3**.
 Publishing this variant also retires old edge release assets.
 
 The machine-local ASPM-v3 diagnostic loader entry pointed to the same old
 kernel files; it has been preserved outside the entries directory as
 `/boot/loader/linux-x1e-t14s-edge-aspm-v3.conf.disabled`.
 
-Jens's 7.3-rc7 tree already contains mainline rc7 (including the QRTR resume
-handshake and the X1E QoS revert), his EL2 remoteproc attach rework with the
-ADSP/CDSP IOMMU mappings removed from the generic overlay, and fixes for the
-duplicate Hamoa ADC node, missing camera nodes, remoteproc deletion guard and
-PAS context release. The local integration patches previously needed on
-7.3-rc3/rc6 are therefore no longer carried.
+Jens's 7.3.0 tree contains mainline v7.3, the clock `sync_state` series
+(without it 7.3 hangs at boot with a black screen unless `clk_ignore_unused`
+is passed), the camss PHY-API support matching the standalone CSI PHY nodes
+(the camera fails to probe without it), Iris firmware loading without TZ/PAS,
+and his EL2 remoteproc attach rework.
 
-Checksummed patches kept in this recipe are pending upstream fixes from
-linux-arm-msm (October 2026):
+Pending upstream fixes carried here (linux-arm-msm, October 2026):
 
-- `dispcc-x1e80100`: keep `disp_cc_pll0` out of the unused-clock sweep
-  (marginal PLL relock causing black eDP bands / boot display problems).
-- `qcom_battmgr`: report `capacity` on X1E80100 (in linux-next).
-- `qcom_battmgr`: report `Full` for a full battery on external power instead
-  of `Not charging`.
-- `qcom_battmgr`: announce AC/USB online changes so UPower notices charger
-  plug/unplug; context-adjusted to apply after the previous patch.
-- T14s PMIC thermal zones (Daniel Lezcano v3): keyboard passive trip at the
-  EC alert temperature (57.85°C) and 73°C critical trips. These require
-  `QCOM_SPMI_ADC5_GEN3`/`QCOM_SPMI_ADC_TM5_GEN3`, enabled in `common/modules.config`.
-- T14s: mark the EC reset GPIO as reserved (in linux-next).
-- Clock `sync_state` support (Brian Masney v3, `20260626-clk-sync-state-v1-0-4156d8196dc8@redhat.com`,
-  Tested-by Jens on X1): device-owned clocks are swept only after their
-  consumers probe. Jens's 7.2.5 tree carries an earlier version; his 7.3 tree
-  does not, and without it rc7 hangs at boot with a black screen unless
-  `clk_ignore_unused` is passed. Not in v7.3; patch 1 is disputed upstream.
+- `dispcc-x1e80100`: keep `disp_cc_pll0` out of the unused-clock sweep.
+- `qcom_battmgr`: report `capacity` on X1E80100, report `Full` on external
+  power, and announce AC/USB online changes for UPower.
+- T14s PMIC thermal zones (Daniel Lezcano v3), which require
+  `QCOM_SPMI_ADC5_GEN3`/`QCOM_SPMI_ADC_TM5_GEN3`.
+- T14s: mark the EC reset GPIO as reserved.
+
+X1E deep sleep at EL2 (s2idle + DRIPS), from justririll/x1e-sleep,
+ramonjesusmiranda-debug/sp11-el2 and Anthony Ruhier, patches 0011-0020:
+
+- system-sleep-only domain idle states; DRIPS (0x0200c354) and the CL5
+  cluster state it is composed on are used only for system sleep (Jens drops
+  CL5 from runtime idle because it resets X1 with DC ZVA), with the Oryon DC
+  ZVA erratum workaround;
+- arch timer: park stopped clockevents enabled+masked at 2^55-1 so the
+  firmware's wake deadline is not in the past;
+- icc-bwmon drops its DDR vote across suspend; syscon no longer holds the
+  TCSR parent clock; crypto (QCE, no driver) disabled so the interconnects
+  reach `sync_state`;
+- `x1e_aoss_cxsd_only` (no AOSD, avoids hourly resets reported at EL2),
+  loaded by the `x1e-el2-sleep` systemd-sleep hook, which also switches the
+  sleep mode to s2idle; `x1e_el1tmr` is built but no longer used;
+- raw PSCI s2idle failure logging.
+
+Status (20 October 2026): DRIPS is entered and accepted, the CPU subsystem
+collapses (~97 % `apss`), resume is clean, but CX collapse and DDR
+self-refresh (`cxsd`/`ddr`) are not reached yet.
 
 `_module_baseline=none` builds the T14s hardware configuration plus
 `common/modules.config` only, without Ubuntu's generic ARM64 module set
 (about 585 modules instead of 7,800; the 7.2.5 package keeps the Ubuntu
-baseline). `modules.config` lists laptop peripherals explicitly: USB
+baseline). `modules.config` lists laptop peripherals explicitly (USB
 Wi-Fi/Bluetooth/serial dongles, card readers, DisplayLink, input devices,
-container networking and VFIO.
+container networking, VFIO) and tracing (ftrace, kprobes, BPF events).
 
 Only the four packaged T14s device trees are built, avoiding missing source
-files for unrelated boards; the full Ubuntu module selection is retained.
-
-Patch headers document provenance and rationale. The shared
-Ubuntu module baseline and existing boot options (including PSR disabled) remain.
-The previous mainline builds had missing battery state and other platform
-problems. Switching source bases is not yet a verified runtime fix: battery
-reporting, boot, audio, and suspend/resume still need testing on the T14s.
+files for unrelated boards. Patch headers document provenance and rationale.
 
 <details>
 <summary>Superseded mainline 7.3-rc2 experiments</summary>

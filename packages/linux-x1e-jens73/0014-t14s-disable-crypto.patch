@@ -1,0 +1,23 @@
+From: Lars Karlslund <lars@karlslund.dk>
+Subject: [PATCH] arm64: dts: qcom: t14s: disable crypto for interconnect sync_state
+
+Sleep test build only. The interconnect providers keep the firmware's
+boot-time votes until sync_state, which waits for every DT consumer to bind.
+QCE has no driver (CRYPTO_DEV_QCE is not built), so the votes are never
+dropped and DDR/buses stay at boot level through suspend.
+---
+--- a/arch/arm64/boot/dts/qcom/x1e78100-lenovo-thinkpad-t14s.dtsi	2026-10-20 19:09:22.784021462 +0200
++++ b/arch/arm64/boot/dts/qcom/x1e78100-lenovo-thinkpad-t14s.dtsi	2026-10-20 19:09:22.794153800 +0200
+@@ -2264,3 +2264,12 @@
+ 
+ 	};
+ };
++
++/*
++ * Sleep test build: let the interconnect providers reach sync_state and drop
++ * the firmware's boot-time votes. They otherwise wait forever for QCE, which
++ * has no driver here (CRYPTO_DEV_QCE is not built).
++ */
++&crypto {
++	status = "disabled";
++};
