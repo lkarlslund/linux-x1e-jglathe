@@ -10,7 +10,7 @@ replace the boot files or device trees of another variant.
 | Package | Base | Purpose |
 | --- | --- | --- |
 | `linux-x1e-jens725-pdc` | Jens `7.2.5-jg-0` | Stable daily-use kernel with the rc6 PDC/SS3 v4 series and diagnostics |
-| `linux-x1e-jens73` | Jens `7.3.0-jg-0` | The single 7.3 variant: Jens's Snapdragon laptop integration, trimmed laptop module set, X1E EL2 s2idle/DRIPS work |
+| `linux-x1e-jens73` | Jens `7.3.0-jg-1` | The single 7.3 variant: Jens's Snapdragon laptop integration, trimmed laptop module set, X1E EL2 s2idle/DRIPS work |
 
 All source revisions are immutable 40-character Git commit IDs in their
 respective `PKGBUILD`. Updating a branch on GitHub does not silently alter a
@@ -31,8 +31,8 @@ especially on firmware that leaves the PDC in secondary-controller mode.
 
 ## Jens 7.3 variant
 
-`linux-x1e-jens73` pins Jens's `7.3.0-jg-0` tag
-(`6456ab41f752a0ce8d97385e0685e2c6986d5eb0`, branch `jg/ubuntu-qcom-x1e-7.3.y`).
+`linux-x1e-jens73` pins Jens's `7.3.0-jg-1` tag
+(`0151068ae447fd8f687b57837dd4be857cff7ca8`, branch `jg/ubuntu-qcom-x1e-7.3.y`).
 It replaces and conflicts with `linux-x1e-t14s-edge` and the short-lived
 `linux-x1e-jens73-sleep` test variant (matching headers likewise). Its loader
 entry is `linux-x1e-jens73.conf`, titled **Arch Linux — Jens 7.3**.
