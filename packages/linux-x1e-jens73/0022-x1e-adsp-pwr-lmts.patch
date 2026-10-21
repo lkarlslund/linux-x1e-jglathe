@@ -1,0 +1,140 @@
+From: justririll (x1e-sleep)
+Subject: [PATCH] soc: qcom: add X1E ADSP power-limits standby notification
+
+Imported from https://github.com/justririll/x1e-sleep
+(modules/adsp-pwr-lmts) as an in-tree module. It is auto-loaded through its
+rpmsg device table when the ADSP exposes the channel.
+
+Windows' PEP (qcpep8380.sys) sends a MODERN_STANDBY_STATE message on the
+APPS_ADSP_PWR_LMTS_GLINK_PORT channel when entering (1) and leaving (0)
+Modern Standby. On entry the ADSP stops its power-limits timer: on the T14s
+the ADSP then wakes ~2-3 times per second during s2idle instead of ~100-160.
+Some OEM ADSP firmware (Samsung Galaxy Book4) crashes on this message.
+---
+--- a/drivers/soc/qcom/Kconfig	2026-10-21 13:38:12.239651261 +0200
++++ b/drivers/soc/qcom/Kconfig	2026-10-21 13:38:52.075860404 +0200
+@@ -46,6 +46,19 @@
+ 	  Ask the AOSS not to enter AOSD (XO shutdown) while still allowing CX
+ 	  collapse and DDR self-refresh. Works around hourly resets in AOSD
+ 	  seen on X1E laptops at EL2.
++
++config QCOM_X1E_ADSP_PWR_LMTS
++	tristate "X1E: tell the ADSP about system standby (power limits)"
++	depends on RPMSG
++	default m
++	help
++	  Send the Modern Standby state to the ADSP on the
++	  APPS_ADSP_PWR_LMTS_GLINK_PORT channel on system suspend and resume,
++	  as Windows' PEP does. The ADSP then stops its power-limits timer,
++	  which otherwise wakes it about 100 times per second during sleep.
++	  Loaded automatically when the ADSP exposes the channel. Some OEM
++	  ADSP firmware (Samsung Galaxy Book4) crashes on this message.
++
+ config QCOM_COMMAND_DB
+ 	tristate "Qualcomm Command DB"
+ 	depends on OF_RESERVED_MEM
+--- a/drivers/soc/qcom/Makefile	2026-10-21 13:38:12.243173297 +0200
++++ b/drivers/soc/qcom/Makefile	2026-10-21 13:38:26.497749071 +0200
+@@ -4,6 +4,7 @@
+ obj-$(CONFIG_QCOM_AOSS_QMP) +=	qcom_aoss.o
+ obj-$(CONFIG_QCOM_X1E_AOSS_CXSD_ONLY) += x1e_aoss_cxsd_only.o
+ obj-$(CONFIG_QCOM_X1E_EL1TMR) += x1e_el1tmr.o
++obj-$(CONFIG_QCOM_X1E_ADSP_PWR_LMTS) += x1e_adsp_pwr_lmts.o
+ obj-$(CONFIG_QCOM_GENI_SE) +=	qcom-geni-se.o
+ obj-$(CONFIG_QCOM_COMMAND_DB) += cmd-db.o
+ obj-$(CONFIG_QCOM_GSBI)	+=	qcom_gsbi.o
+--- a/drivers/soc/qcom/x1e_adsp_pwr_lmts.c	1970-01-01 01:00:00.000000000 +0100
++++ b/drivers/soc/qcom/x1e_adsp_pwr_lmts.c	1970-01-01 01:00:00.000000000 +0100
+@@ -0,0 +1,92 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Tell the ADSP when the system enters and leaves sleep, like Windows does.
++ *
++ * Windows' PEP (qcpep8380.sys) sends a MODERN_STANDBY_STATE message on the
++ * APPS_ADSP_PWR_LMTS_GLINK_PORT channel when the platform enters Modern
++ * Standby (state 1) and when it leaves it (state 0). On entry the ADSP stops
++ * its power-limits (PLD) timer, which otherwise wakes it ~100 times per
++ * second; with the message it wakes ~2 times per second during sleep.
++ *
++ * Imported from https://github.com/justririll/x1e-sleep (modules/adsp-pwr-lmts).
++ *
++ * Send the same messages from the system suspend/resume callbacks of the
++ * rpmsg device. The glink edge is its parent, so it is still up here.
++ */
++#include <linux/module.h>
++#include <linux/mod_devicetable.h>
++#include <linux/pm.h>
++#include <linux/rpmsg.h>
++
++#define PWR_LMTS_MODERN_STANDBY_STATE	1
++
++struct pwr_lmts_msg {
++	__le32 size;
++	__le32 type;
++	__le32 count;
++	__le32 state;
++	__le32 reserved[2];
++} __packed;
++
++static int pwr_lmts_send_state(struct rpmsg_device *rpdev, u32 state)
++{
++	struct pwr_lmts_msg msg = {
++		.size = cpu_to_le32(sizeof(msg)),
++		.type = cpu_to_le32(PWR_LMTS_MODERN_STANDBY_STATE),
++		.count = cpu_to_le32(1),
++		.state = cpu_to_le32(state),
++	};
++	int ret;
++
++	ret = rpmsg_send(rpdev->ept, &msg, sizeof(msg));
++	if (ret)
++		dev_warn(&rpdev->dev, "failed to send standby state %u: %d\n", state, ret);
++	return ret;
++}
++
++static int pwr_lmts_callback(struct rpmsg_device *rpdev, void *data, int len,
++			     void *priv, u32 addr)
++{
++	dev_dbg(&rpdev->dev, "rx %d bytes\n", len);
++	return 0;
++}
++
++static int pwr_lmts_probe(struct rpmsg_device *rpdev)
++{
++	return 0;
++}
++
++static int pwr_lmts_suspend(struct device *dev)
++{
++	/* Do not block suspend if the ADSP does not take the message */
++	pwr_lmts_send_state(container_of(dev, struct rpmsg_device, dev), 1);
++	return 0;
++}
++
++static int pwr_lmts_resume(struct device *dev)
++{
++	pwr_lmts_send_state(container_of(dev, struct rpmsg_device, dev), 0);
++	return 0;
++}
++
++static DEFINE_SIMPLE_DEV_PM_OPS(pwr_lmts_pm_ops, pwr_lmts_suspend, pwr_lmts_resume);
++
++static const struct rpmsg_device_id pwr_lmts_id_table[] = {
++	{ .name = "APPS_ADSP_PWR_LMTS_GLINK_PORT" },
++	{ }
++};
++MODULE_DEVICE_TABLE(rpmsg, pwr_lmts_id_table);
++
++static struct rpmsg_driver pwr_lmts_driver = {
++	.drv = {
++		.name = "x1e_adsp_pwr_lmts",
++		.pm = pm_sleep_ptr(&pwr_lmts_pm_ops),
++	},
++	.id_table = pwr_lmts_id_table,
++	.probe = pwr_lmts_probe,
++	.callback = pwr_lmts_callback,
++};
++module_rpmsg_driver(pwr_lmts_driver);
++
++MODULE_DESCRIPTION("Qualcomm ADSP power-limits Modern Standby notification");
++MODULE_LICENSE("GPL");
