@@ -1,0 +1,45 @@
+pkgbase=linux-x1e-jens73-exp
+pkgver=7.3.0
+pkgrel=2
+
+_variant_desc='Jens 7.3.0 Snapdragon laptop integration (experimental)'
+_kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
+# Our changes live as commits in the kernel repo ~/github-repos/linux-x1e-t14s-7.3.git (t14s/jens-7.3, exp/*);
+# build from the local worktree unless X1E_KERNEL_GIT points elsewhere.
+_kernel_git="${X1E_KERNEL_GIT:-file:///home/lak/github-repos/linux-x1e-t14s-7.3.git}"
+_commit='d7dfb7ad40f412896c9bce0b3ef1e278400f0e11'
+_boot_title='Arch Linux — Jens 7.3 EXPERIMENTAL'
+_sort_key='41-x1e-jens73-exp'
+_module_baseline=none
+_kernel_options='rw id_aa64mmfr0.ecv=1 id_aa64mmfr1.vh=0 msm.psr_enabled=0'
+
+_kernel_patches=()
+
+source "${startdir}/../../common/kernel-package.inc"
+source+=("${_kernel_patches[@]}" x1e-el2-sleep)
+sha256sums+=(
+  'f1bc46edfe9846cc445e5273ed7a070ea1bf1ec017797cdc29ad47abe4e3dde0'
+)
+
+# Replaces the old 7.3 edge package and the merged-in sleep test variant.
+package_linux-x1e-jens73-exp() {
+  _package
+  install -Dm755 "${srcdir}/x1e-el2-sleep" \
+    "${pkgdir}/usr/lib/systemd/system-sleep/x1e-el2-sleep-exp"
+}
+package_linux-x1e-jens73-exp-headers() {
+  _package-headers
+}
+
+# This package installs only T14s DTBs. Other boards in this integration tree
+# include missing files (for example x1-acer-swift-14.dtsi).
+build() {
+  cd "${_srcname}"
+  make -j"$(nproc)" Image Image.gz modules \
+    qcom/x1e78100-lenovo-thinkpad-t14s.dtb \
+    qcom/x1e78100-lenovo-thinkpad-t14s-oled.dtb
+  # The EL2 DTBs share x1-el2.dtbo and rebuild their base DTBs; building them
+  # in parallel (makepkg exports MAKEFLAGS=-j) races on those outputs.
+  make -j1 qcom/x1e78100-lenovo-thinkpad-t14s-el2.dtb \
+    qcom/x1e78100-lenovo-thinkpad-t14s-oled-el2.dtb
+}

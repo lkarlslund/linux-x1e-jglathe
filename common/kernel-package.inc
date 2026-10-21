@@ -23,7 +23,7 @@ options=(
 
 _srcname="${pkgbase}-${pkgver}"
 source=(
-  "${_srcname}::git+${_kernel_repo}.git#commit=${_commit}"
+  "${_srcname}::git+${_kernel_git:-${_kernel_repo}.git}#commit=${_commit}"
   'running.config'
   'ubuntu-arm64.config'
   'ubuntu-module-exceptions'

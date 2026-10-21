@@ -1,0 +1,20 @@
+#!/bin/sh
+# systemd-sleep hook for the linux-x1e-jens73 kernel.
+#
+# DRIPS is reached through s2idle (the system power domain's CPU_SUSPEND),
+# not PSCI SYSTEM_SUSPEND, so switch the mode after systemd has written its
+# MemorySleepMode, and keep the SoC out of AOSD (hourly resets reported on
+# X1E at EL2). The firmware's wake deadline comes from the parked arch timer
+# (patch 0016), so x1e_el1tmr is no longer loaded. Other kernels are left
+# alone.
+
+case "$(uname -r)" in
+	*-x1e-jens73-exp-ARCH) ;;
+	*) exit 0 ;;
+esac
+
+if [ "$1" = pre ] && [ "$2" = suspend ]; then
+	echo s2idle > /sys/power/mem_sleep
+	modprobe x1e_aoss_cxsd_only
+fi
+exit 0
