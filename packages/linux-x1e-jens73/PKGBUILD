@@ -1,6 +1,6 @@
 pkgbase=linux-x1e-jens73
 pkgver=7.3.0
-pkgrel=4
+pkgrel=5
 
 _variant_desc='Jens 7.3.0 Snapdragon laptop integration'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
@@ -28,6 +28,7 @@ _kernel_patches=(
   '0018-oryon-dc-zva-erratum.patch'
   '0019-hamoa-cl5-system-sleep-only.patch'
   '0020-cpuidle-psci-log-s2idle-failures.patch'
+  '0021-q6v5-pas-el2-nvhe.patch'
 )
 
 source "${startdir}/../../common/kernel-package.inc"
@@ -49,6 +50,7 @@ sha256sums+=(
   '314621e6548a7f4881e3d1636d2d8fbbba682be0eb65634b6dba8283934b38f8'
   'cc5f94b76cde1155182b41cf7e47bc681ab7141727a5255b916896bf506a38b9'
   '7fcbfcb30c8f735c110761aa0534b29907380231d775e18e51aa50e0a5c871ff'
+  '14508a538b517d973271317ab2060d379d047eea5f654cef310eaa01024e714a'
   '1aaa67890b0b89d60ecbaedaa91551dcade50fd5b4c7bff735c18f2d515957a3'
 )
 
