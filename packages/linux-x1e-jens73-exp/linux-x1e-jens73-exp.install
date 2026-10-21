@@ -1,5 +1,5 @@
 _configure_loader_root() {
-  local entry=boot/loader/entries/linux-x1e-jens73.conf
+  local entry=boot/loader/entries/linux-x1e-jens73-exp.conf
   local root_uuid tmp
 
   [[ -f $entry ]] || return 0
@@ -39,5 +39,5 @@ post_upgrade() {
 }
 
 post_remove() {
-  rm -f boot/initramfs-linux-x1e-jens73.img
+  rm -f boot/initramfs-linux-x1e-jens73-exp.img
 }
