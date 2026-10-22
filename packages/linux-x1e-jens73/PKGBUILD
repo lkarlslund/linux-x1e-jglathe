@@ -1,13 +1,13 @@
 pkgbase=linux-x1e-jens73
 pkgver=7.3.0
-pkgrel=8
+pkgrel=9
 
 _variant_desc='Jens 7.3.0 Snapdragon laptop integration'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
 # Our changes are commits on github.com/lkarlslund/linux-x1e-t14s (t14s/jens-7.3, exp/*);
 # set X1E_KERNEL_GIT (e.g. in ~/.makepkg.conf) to build from a local mirror instead.
 _kernel_git="${X1E_KERNEL_GIT:-https://github.com/lkarlslund/linux-x1e-t14s.git}"
-_commit='d1b10a4515b5345078b748dbdf25b0e1fb1789d9'
+_commit='85211c98063b18700a9a95dda79aa95ab3a390fe'
 _boot_title='Arch Linux — Jens 7.3'
 _sort_key='40-x1e-jens73'
 _module_baseline=none
