@@ -11,7 +11,7 @@ _commit='5f69e49df3e609b221a8162d175ddaf3203721e1'
 _boot_title='Arch Linux — Jens 7.3'
 _sort_key='40-x1e-jens73'
 _module_baseline=none
-_kernel_options='rw id_aa64mmfr0.ecv=1 quiet splash msm.psr_enabled=0'
+_kernel_options='rw id_aa64mmfr0.ecv=1 id_aa64mmfr1.vh=0 quiet splash msm.psr_enabled=0'
 
 _kernel_patches=()
 
