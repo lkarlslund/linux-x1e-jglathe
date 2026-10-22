@@ -18,7 +18,7 @@ _kernel_patches=()
 source "${startdir}/../../common/kernel-package.inc"
 source+=("${_kernel_patches[@]}" x1e-el2-sleep)
 sha256sums+=(
-  'f1bc46edfe9846cc445e5273ed7a070ea1bf1ec017797cdc29ad47abe4e3dde0'
+  'b77dcffa2857062999f79b5b9481c5ecb9f2a601999b88e2023b98a341c40817'
 )
 
 # Replaces the old 7.3 edge package and the merged-in sleep test variant.

@@ -5,16 +5,38 @@
 # not PSCI SYSTEM_SUSPEND, so switch the mode after systemd has written its
 # MemorySleepMode, and keep the SoC out of AOSD (hourly resets reported on
 # X1E at EL2). The firmware's wake deadline comes from the parked arch timer
-# (patch 0016), so x1e_el1tmr is no longer loaded. Other kernels are left
-# alone.
+# (patch 0016), so x1e_el1tmr is no longer loaded.
+#
+# Once CX collapses, the firmware leaves the deepest state about every 31 s
+# and edge-triggered PDC wake lines see a spurious edge: the D+ wake IRQ of
+# the USB 2.0 controller that only carries the fingerprint reader, and with
+# the lid open the lid GPIO. Keep that controller from waking the system, and
+# drop lid wakeup while the lid is open (restored on resume).
+# Other kernels are left alone.
 
 case "$(uname -r)" in
 	*-x1e-jens73-ARCH) ;;
 	*) exit 0 ;;
 esac
 
+usb2_wake=/sys/devices/platform/soc@0/a200000.usb/power/wakeup
+lid_wake=/sys/devices/platform/gpio-keys/power/wakeup
+lid_state=/run/x1e-el2-sleep-lid-wake
+
+lid_closed() {
+	busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
+		org.freedesktop.login1.Manager LidClosed 2>/dev/null | grep -q true
+}
+
 if [ "$1" = pre ] && [ "$2" = suspend ]; then
 	echo s2idle > /sys/power/mem_sleep
 	modprobe x1e_aoss_cxsd_only
+	[ -w "$usb2_wake" ] && echo disabled > "$usb2_wake"
+	if [ -w "$lid_wake" ] && ! lid_closed && [ "$(cat "$lid_wake")" = enabled ]; then
+		echo disabled > "$lid_wake" && touch "$lid_state"
+	fi
+elif [ "$1" = post ] && [ -e "$lid_state" ]; then
+	echo enabled > "$lid_wake"
+	rm -f "$lid_state"
 fi
 exit 0

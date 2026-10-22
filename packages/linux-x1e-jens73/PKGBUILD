@@ -1,13 +1,13 @@
 pkgbase=linux-x1e-jens73
 pkgver=7.3.0
-pkgrel=7
+pkgrel=8
 
 _variant_desc='Jens 7.3.0 Snapdragon laptop integration'
 _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
 # Our changes live as commits in the kernel repo ~/github-repos/linux-x1e-t14s-7.3.git (t14s/jens-7.3, exp/*);
 # build from the local worktree unless X1E_KERNEL_GIT points elsewhere.
 _kernel_git="${X1E_KERNEL_GIT:-file:///home/lak/github-repos/linux-x1e-t14s-7.3.git}"
-_commit='5f69e49df3e609b221a8162d175ddaf3203721e1'
+_commit='d1b10a4515b5345078b748dbdf25b0e1fb1789d9'
 _boot_title='Arch Linux — Jens 7.3'
 _sort_key='40-x1e-jens73'
 _module_baseline=none
@@ -18,7 +18,7 @@ _kernel_patches=()
 source "${startdir}/../../common/kernel-package.inc"
 source+=("${_kernel_patches[@]}" x1e-el2-sleep)
 sha256sums+=(
-  '1aaa67890b0b89d60ecbaedaa91551dcade50fd5b4c7bff735c18f2d515957a3'
+  'a25218066cbad1f2ae30e7e4c48b768aa45221bdd1566e6263e0d7d4218b0e53'
 )
 
 # Replaces the old 7.3 edge package and the merged-in sleep test variant.
