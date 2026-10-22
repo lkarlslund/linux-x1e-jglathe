@@ -7,7 +7,7 @@ _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
 # Our changes live as commits in the kernel repo ~/github-repos/linux-x1e-t14s-7.3.git (t14s/jens-7.3, exp/*);
 # build from the local worktree unless X1E_KERNEL_GIT points elsewhere.
 _kernel_git="${X1E_KERNEL_GIT:-file:///home/lak/github-repos/linux-x1e-t14s-7.3.git}"
-_commit='6fcb2680ccedbeb52b969abd0dd678bfb31878b7'
+_commit='d1b10a4515b5345078b748dbdf25b0e1fb1789d9'
 _boot_title='Arch Linux — Jens 7.3 EXPERIMENTAL'
 _sort_key='41-x1e-jens73-exp'
 _module_baseline=none
