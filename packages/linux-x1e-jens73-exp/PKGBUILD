@@ -7,7 +7,7 @@ _kernel_repo='https://github.com/jglathe/linux_ms_dev_kit'
 # Our changes are commits on github.com/lkarlslund/linux-x1e-t14s (t14s/jens-7.3, exp/*);
 # set X1E_KERNEL_GIT (e.g. in ~/.makepkg.conf) to build from a local mirror instead.
 _kernel_git="${X1E_KERNEL_GIT:-https://github.com/lkarlslund/linux-x1e-t14s.git}"
-_commit='85211c98063b18700a9a95dda79aa95ab3a390fe'
+_commit='1492f7986238c4b97899e85324fb996467384b28'
 _boot_title='Arch Linux — Jens 7.3 EXPERIMENTAL'
 _sort_key='41-x1e-jens73-exp'
 _module_baseline=none
@@ -18,7 +18,7 @@ _kernel_patches=()
 source "${startdir}/../../common/kernel-package.inc"
 source+=("${_kernel_patches[@]}" x1e-el2-sleep)
 sha256sums+=(
-  'b77dcffa2857062999f79b5b9481c5ecb9f2a601999b88e2023b98a341c40817'
+  '64e8a442ecde6d796fb3b27deb4e34e0b73e6001f4fbd81b4a4763fc98ef3a63'
 )
 
 # Replaces the old 7.3 edge package and the merged-in sleep test variant.

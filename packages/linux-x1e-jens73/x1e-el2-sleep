@@ -4,8 +4,8 @@
 # DRIPS is reached through s2idle (the system power domain's CPU_SUSPEND),
 # not PSCI SYSTEM_SUSPEND, so switch the mode after systemd has written its
 # MemorySleepMode, and keep the SoC out of AOSD (hourly resets reported on
-# X1E at EL2). The firmware's wake deadline comes from the parked arch timer
-# (patch 0016), so x1e_el1tmr is no longer loaded.
+# X1E at EL2). The firmware takes the APSS wake-up deadline from the arch
+# timer, which the kernel parks with a valid CVAL when it is stopped.
 #
 # Once CX collapses, the firmware leaves the deepest state about every 31 s
 # and edge-triggered PDC wake lines see a spurious edge: the D+ wake IRQ of
