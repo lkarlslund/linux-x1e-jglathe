@@ -1,0 +1,55 @@
+#!/bin/sh
+# Keep the running kernel's modules loadable when pacman upgrades or removes
+# its linux-x1e-* package. The module directory carries the pkgrel, so an
+# upgrade deletes the tree of the kernel that is still running.
+#
+#   save     PreTransaction: hard-link the running tree aside
+#   restore  PostTransaction: put it back if the transaction removed it
+#   prune    drop restored trees of kernels that are no longer running
+set -u
+
+mods=/usr/lib/modules
+kver=$(uname -r)
+keep="$mods/.keep-$kver"
+marker=.x1e-restored
+
+prune() {
+	for m in "$mods"/*/"$marker"; do
+		[ -e "$m" ] || continue
+		d=${m%/"$marker"}
+		[ "${d##*/}" = "$kver" ] && continue
+		if pacman -Qqo "$d" >/dev/null 2>&1; then
+			# A package owns this tree again; leave it alone.
+			rm -f "$m"
+		else
+			rm -rf "$d"
+		fi
+	done
+}
+
+case "${1:-}" in
+save)
+	rm -rf "$keep"
+	[ -d "$mods/$kver/kernel" ] && cp -al "$mods/$kver" "$keep"
+	;;
+restore)
+	if [ -d "$keep" ]; then
+		if [ ! -d "$mods/$kver/kernel" ]; then
+			mkdir -p "$mods/$kver"
+			cp -aln "$keep/." "$mods/$kver/"
+			touch "$mods/$kver/$marker"
+			depmod "$kver"
+			echo "Kept modules for the running kernel $kver until the next boot."
+		fi
+		rm -rf "$keep"
+	fi
+	prune
+	;;
+prune)
+	prune
+	;;
+*)
+	echo "usage: ${0##*/} save|restore|prune" >&2
+	exit 2
+	;;
+esac

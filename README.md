@@ -304,3 +304,13 @@ boot, suspend, resume, display, USB, and power-consumption testing.
 
 The old one-package layout and unused historical camera patches are retained in
 `legacy-patches/` for provenance; they are not applied to any current variant.
+
+## Keeping the running kernel's modules
+
+Module directories carry the pkgrel (`7.3.0-7-x1e-jens73-ARCH`), so upgrading
+a kernel package deletes the modules of the kernel that is still running, and
+anything not yet loaded (USB storage, for example) fails until a reboot.
+`packages/x1e-keep-running-modules` adds pacman hooks around every
+`linux-x1e-*` transaction that hard-link the running tree aside and put it
+back afterwards; its boot service removes the kept tree once another kernel
+is running.

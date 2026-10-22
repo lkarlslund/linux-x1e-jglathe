@@ -1,0 +1,10 @@
+[Trigger]
+Type = Package
+Operation = Upgrade
+Operation = Remove
+Target = linux-x1e-*
+
+[Action]
+Description = Restoring the running kernel's modules...
+When = PostTransaction
+Exec = /usr/lib/x1e-keep-running-modules restore

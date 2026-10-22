@@ -1,0 +1,7 @@
+post_install() {
+  systemctl enable x1e-keep-running-modules.service >/dev/null 2>&1 || true
+}
+
+pre_remove() {
+  systemctl disable x1e-keep-running-modules.service >/dev/null 2>&1 || true
+}

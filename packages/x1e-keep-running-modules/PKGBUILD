@@ -1,0 +1,25 @@
+pkgname=x1e-keep-running-modules
+pkgver=1
+pkgrel=1
+pkgdesc='Keep the running linux-x1e-* kernel modules loadable across kernel upgrades'
+arch=('any')
+license=('GPL-2.0-only')
+depends=('kmod' 'pacman' 'systemd')
+install=x1e-keep-running-modules.install
+source=(
+  'x1e-keep-running-modules'
+  '10-x1e-keep-running-modules-save.hook'
+  '95-x1e-keep-running-modules-restore.hook'
+  'x1e-keep-running-modules.service'
+)
+sha256sums=('d28e368154fd6709c77fac48ecc74c841e5d6cfe9424f5ff086e33ed16cd78ea'
+            '67dd7aa411fb496e7807f8349385dfb3515b37bf6dd616935900867805162272'
+            'dec3e43d0b408dcc9f062df8cd06fbbb1b3a24fdb5bcb163a5e7f2bc3c1e3bc3'
+            '09f951ef3aa117a7a4707068c97c380d1a82a712611a85ad89fc8008f683dc16')
+
+package() {
+  install -Dm755 x1e-keep-running-modules "$pkgdir/usr/lib/x1e-keep-running-modules"
+  install -Dm644 -t "$pkgdir/usr/share/libalpm/hooks" \
+    10-x1e-keep-running-modules-save.hook 95-x1e-keep-running-modules-restore.hook
+  install -Dm644 -t "$pkgdir/usr/lib/systemd/system" x1e-keep-running-modules.service
+}

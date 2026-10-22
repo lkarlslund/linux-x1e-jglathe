@@ -1,0 +1,10 @@
+[Unit]
+Description=Remove kernel modules kept for a kernel that is no longer running
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/x1e-keep-running-modules prune
+
+[Install]
+WantedBy=multi-user.target
